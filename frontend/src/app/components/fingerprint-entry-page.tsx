@@ -7,7 +7,6 @@ import type { Fingerprint } from '@/types/index';
 export function FingerprintEntryPage() {
     const [fingerprints, setFingerprints] = useState<Fingerprint[]>([]);
     const [scanStatus, setScanStatus] = useState<'waiting' | 'success' | 'denied'>('waiting');
-    const [isScanning, setIsScanning] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newFingerprintId, setNewFingerprintId] = useState('');
     const [newUserName, setNewUserName] = useState('');
@@ -29,30 +28,7 @@ export function FingerprintEntryPage() {
         }
     };
 
-    const handleScan = async () => {
-        setIsScanning(true);
-        setScanStatus('waiting');
 
-        // Simulation of fingerprint scan for testing
-        // In production, this would be triggered by WebSocket/Event from backend
-        const mockFingerprintId = Math.floor(Math.random() * 127) + 1;
-
-        try {
-            const result = await fingerprintService.verify(mockFingerprintId);
-            if (result.success) {
-                setScanStatus('success');
-                toast.success(result.message);
-            } else {
-                setScanStatus('denied');
-                toast.error(result.message);
-            }
-        } catch (error: any) {
-            setScanStatus('denied');
-            toast.error(error.response?.data?.detail || 'Lỗi xác thực vân tay');
-        } finally {
-            setIsScanning(false);
-        }
-    };
 
     const handleAddFingerprint = async () => {
         if (!newFingerprintId || !newUserName) {
@@ -130,20 +106,9 @@ export function FingerprintEntryPage() {
                             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                                 <FingerprintIcon className="w-12 h-12 text-muted-foreground" />
                             </div>
-                            <p className="text-xl mb-2">Đang chờ quét vân tay...</p>
+                            <p className="text-xl mb-2">Sẵn sàng xác thực vân tay</p>
                             <p className="text-sm text-muted-foreground">Đặt ngón tay lên cảm biến AS608</p>
-                            <button
-                                onClick={handleScan}
-                                disabled={isScanning}
-                                className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
-                            >
-                                {isScanning ? (
-                                    <>
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                        Đang quét...
-                                    </>
-                                ) : 'Mô phỏng quét vân tay'}
-                            </button>
+                            <p className="text-xs text-muted-foreground mt-2">Hệ thống sẽ tự động quét và xác thực</p>
                         </div>
                     )}
 
@@ -158,7 +123,7 @@ export function FingerprintEntryPage() {
                                 onClick={() => setScanStatus('waiting')}
                                 className="px-6 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
                             >
-                                Quét lại
+                                Đóng
                             </button>
                         </div>
                     )}
@@ -174,7 +139,7 @@ export function FingerprintEntryPage() {
                                 onClick={() => setScanStatus('waiting')}
                                 className="px-6 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
                             >
-                                Thử lại
+                                Đóng
                             </button>
                         </div>
                     )}
