@@ -46,8 +46,14 @@ class UARTService:
         self.listener_thread: Optional[threading.Thread] = None
         self.message_callback: Optional[Callable] = None
         
-    def connect(self):
+    def connect(self, port: str = None, baudrate: int = None):
         """Connect to ESP32 via UART"""
+        # Update config if provided
+        if port:
+            self.port = port
+        if baudrate:
+            self.baudrate = baudrate
+            
         try:
             self.serial_conn = serial.Serial(
                 port=self.port,

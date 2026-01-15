@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useLockStore } from '@/store/lockStore';
 
 export function DashboardPage() {
-  const { doorStatus, stats, isLoading, fetchState, fetchStats } = useLockStore();
+  const { doorStatus, stats, isLoading, apiBaseURL, fetchState, fetchStats } = useLockStore();
 
   useEffect(() => {
     fetchState();
@@ -158,11 +158,19 @@ export function DashboardPage() {
 
           {/* Camera Feed Placeholder */}
           <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-            <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              src={`${apiBaseURL}/api/video/stream`}
+              alt="Live Stream"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.querySelector('.placeholder')?.classList.remove('hidden');
+              }}
+            />
+            <div className="placeholder hidden absolute inset-0 flex items-center justify-center bg-gray-900">
               <div className="text-center">
                 <Camera className="w-16 h-16 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500">Camera đang kết nối...</p>
-                <p className="text-sm text-gray-600 mt-1">Stream sẽ hiển thị ở đây</p>
+                <p className="text-gray-500">Không có tín hiệu Camera (Chưa kết nối Backend)</p>
               </div>
             </div>
 
