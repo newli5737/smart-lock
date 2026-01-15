@@ -1,43 +1,19 @@
-import { useState, useRef, useCallback } from 'react';
-import Webcam from 'react-webcam';
-import { Check, X, Camera, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Check, X, Video, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { faceService } from '@/api';
 
 export function FaceEntryPage() {
   const [entryStatus, setEntryStatus] = useState<'waiting' | 'success' | 'denied' | 'error'>('waiting');
-  const [isScanning, setIsScanning] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [lastUser, setLastUser] = useState<string | null>(null);
-  const webcamRef = useRef<Webcam>(null);
 
-  const dataURLtoFile = (dataurl: string, filename: string) => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
-  };
-
-  const handleScan = useCallback(async () => {
-    if (!webcamRef.current) return;
-
-    setIsScanning(true);
+  const handleVerify = async () => {
+    setIsVerifying(true);
     setEntryStatus('waiting');
 
     try {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (!imageSrc) {
-        toast.error('Không thể chụp ảnh từ camera');
-        setIsScanning(false);
-        return;
-      }
-
-      const file = dataURLtoFile(imageSrc, 'face-scan.jpg');
-      const result = await faceService.verify(file);
+      const result = await faceService.verifyFromStream();
 
       if (result.success) {
         setLastUser(result.user_name || null);
@@ -49,13 +25,13 @@ export function FaceEntryPage() {
         toast.error(result.message);
       }
     } catch (error: any) {
-      console.error('Scan error:', error);
+      console.error('Verification error:', error);
       setEntryStatus('error');
       toast.error(error.response?.data?.detail || 'Lỗi kết nối đến server');
     } finally {
-      setIsScanning(false);
+      setIsVerifying(false);
     }
-  }, []);
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -72,32 +48,31 @@ export function FaceEntryPage() {
           {entryStatus === 'waiting' || entryStatus === 'error' ? (
             <div className="w-full max-w-md space-y-4">
               <div className="relative aspect-video bg-black rounded-lg overflow-hidden border-2 border-primary/20">
-                <Webcam
-                  audio={false}
-                  ref={webcamRef}
-                  screenshotFormat="image/jpeg"
+                {/* Backend video stream */}
+                <img
+                  src="http://localhost:8000/api/video/stream"
+                  alt="Camera Stream"
                   className="w-full h-full object-cover"
-                  videoConstraints={{ facingMode: 'user' }}
                 />
                 <div className="absolute inset-0 border-2 border-primary/50 rounded-lg animate-pulse pointer-events-none" />
               </div>
 
               <div className="text-center">
-                <p className="text-lg mb-4">Vui lòng nhìn vào camera</p>
+                <p className="text-lg mb-4">Đứng trước camera để xác thực</p>
                 <button
-                  onClick={handleScan}
-                  disabled={isScanning}
+                  onClick={handleVerify}
+                  disabled={isVerifying}
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
-                  {isScanning ? (
+                  {isVerifying ? (
                     <>
                       <RefreshCw className="w-5 h-5 animate-spin" />
                       Đang xác thực...
                     </>
                   ) : (
                     <>
-                      <Camera className="w-5 h-5" />
-                      Xác thực khuôn mặt
+                      <Video className="w-5 h-5" />
+                      Xác thực
                     </>
                   )}
                 </button>

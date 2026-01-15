@@ -40,6 +40,17 @@ void vSerialTask(void *pvParameters) {
             qCmd.type = CMD_BEEP;
             qCmd.value = doc["times"] | 1;
             xQueueSend(xCommandQueue, &qCmd, portMAX_DELAY);
+          } else if (strcmp(cmd, "enroll_fingerprint") == 0) {
+            // Start fingerprint enrollment
+            extern bool enrollmentMode;
+            extern uint8_t enrollmentID;
+            extern uint8_t enrollmentStep;
+            
+            enrollmentID = doc["id"] | 1;
+            enrollmentMode = true;
+            enrollmentStep = 0;
+            
+            Serial.println("{\"status\":\"enrollment_started\"}");
           }
         } else {
         }
@@ -54,9 +65,9 @@ void vSerialTask(void *pvParameters) {
       xSemaphoreTake(xSerialMutex, portMAX_DELAY);
 
       doc.clear();
-      if (evt.type == EVENT_RFID_READ) {
-        doc["type"] = "rfid";
-        doc["uid"] = evt.data;
+      if (evt.type == EVENT_FINGERPRINT_DETECTED) {
+        doc["type"] = "fingerprint";
+        doc["id"] = evt.data;
       } else if (evt.type == EVENT_KEYPAD_SUBMIT) {
         doc["type"] = "keypad";
         doc["password"] = evt.data;

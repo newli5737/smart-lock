@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/app/components/dashboard-layout';
 import { DashboardPage } from '@/app/components/dashboard-page';
 import { FaceEntryPage } from '@/app/components/face-entry-page';
 import { FaceRegisterPage } from '@/app/components/face-register-page';
-import { RFIDEntryPage } from '@/app/components/rfid-entry-page';
+import { FingerprintEntryPage } from '@/app/components/fingerprint-entry-page';
 import { KeypadPage } from '@/app/components/keypad-page';
 import { HistoryPage } from '@/app/components/history-page';
 import { SettingsPage } from '@/app/components/settings-page';
@@ -29,7 +29,7 @@ function AppContent() {
       case 'face-register':
         return <FaceRegisterPage />;
       case 'rfid-entry':
-        return <RFIDEntryPage />;
+        return <FingerprintEntryPage />;
       case 'keypad':
         return <KeypadPage />;
       case 'history':

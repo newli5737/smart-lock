@@ -12,11 +12,12 @@ export interface User {
   has_face: boolean;
 }
 
-export interface RFIDCard {
+export interface Fingerprint {
   id: number;
-  card_uid: string;
+  fingerprint_id: number;
   user_id: number;
   user_name: string;
+  finger_position: number;
   is_active: boolean;
   created_at: string;
 }
@@ -24,7 +25,7 @@ export interface RFIDCard {
 export interface AccessLog {
   id: number;
   user_name: string | null;
-  access_method: 'face' | 'rfid' | 'keypad';
+  access_method: 'face' | 'fingerprint' | 'keypad';
   access_type: 'entry' | 'exit';
   success: boolean;
   timestamp: string;
@@ -47,7 +48,7 @@ export interface FaceVerifyResponse {
   message: string;
 }
 
-export interface RFIDVerifyResponse {
+export interface FingerprintVerifyResponse {
   success: boolean;
   user_name: string | null;
   message: string;

@@ -10,7 +10,8 @@
 // --- Data Structures ---
 
 enum EventType {
-  EVENT_RFID_READ,
+  EVENT_FINGERPRINT_DETECTED,
+  EVENT_FINGERPRINT_ENROLL_START,  // New: Start enrollment process
   EVENT_KEYPAD_PRESS,
   EVENT_KEYPAD_SUBMIT // When user presses '#' or full password collected
 };

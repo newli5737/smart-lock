@@ -29,6 +29,12 @@ export const faceService = {
         return response.data;
     },
 
+    // Verify face from backend camera stream
+    async verifyFromStream(): Promise<FaceVerifyResponse> {
+        const response = await apiClient.post<FaceVerifyResponse>('/api/face/verify-from-stream');
+        return response.data;
+    },
+
     // Get all users
     async getUsers(): Promise<User[]> {
         const response = await apiClient.get<User[]>('/api/face/users');

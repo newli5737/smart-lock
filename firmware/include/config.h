@@ -14,13 +14,9 @@
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
-// SPI (RFID MFRC522)
-// Default VSPI: SCK=18, MISO=19, MOSI=23
-#define PIN_RFID_SDA 5  // SS/SDA Changed from 21 to 5 to avoid I2C conflict
-#define PIN_RFID_RST 17 // RST
-#define PIN_RFID_SCK 18
-#define PIN_RFID_MISO 19
-#define PIN_RFID_MOSI 23
+// UART (AS608 Fingerprint Sensor)
+#define PIN_FINGERPRINT_TX 16  // TX to sensor RX
+#define PIN_FINGERPRINT_RX 17  // RX to sensor TX
 
 // Keypad 4x4
 // R1, R2, R3, R4, C1, C2, C3, C4

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import Base, engine
-from routers import state, face, rfid, keypad, logs, config, video
+from routers import state, face, fingerprint, keypad, logs, config, video
 from services.uart import uart_service
 from services.state_manager import state_manager
 from models import AccessLog, AccessMethod, AccessType
@@ -47,7 +47,7 @@ app.add_middleware(
 # Include routers
 app.include_router(state.router)
 app.include_router(face.router)
-app.include_router(rfid.router)
+app.include_router(fingerprint.router)
 app.include_router(keypad.router)
 app.include_router(logs.router)
 app.include_router(config.router)

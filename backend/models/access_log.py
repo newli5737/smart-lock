@@ -5,7 +5,7 @@ import enum
 
 class AccessMethod(str, enum.Enum):
     FACE = "face"
-    RFID = "rfid"
+    FINGERPRINT = "fingerprint"
     KEYPAD = "keypad"
 
 class AccessType(str, enum.Enum):

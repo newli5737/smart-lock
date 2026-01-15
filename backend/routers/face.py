@@ -6,6 +6,7 @@ from schemas.user import UserResponse, FaceVerifyResponse
 from services.uniface import uniface_service
 from services.state_manager import state_manager
 from services.uart import uart_service
+from services.camera import camera_service
 import numpy as np
 from typing import List
 import os
@@ -226,6 +227,139 @@ async def get_users(db: Session = Depends(get_db)):
         )
         for user in users
     ]
+
+@router.post("/verify-from-stream", response_model=FaceVerifyResponse)
+async def verify_face_from_stream(db: Session = Depends(get_db)):
+    """Xác thực khuôn mặt từ camera backend (chỉ trong chế độ Entry/Exit)"""
+    
+    # Kiểm tra chế độ
+    if not state_manager.is_entry_exit_mode():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ có thể xác thực trong chế độ Entry/Exit"
+        )
+    
+    # Lấy frame hiện tại từ camera backend
+    frame_bytes = camera_service.get_frame()
+    
+    if frame_bytes is None:
+        uart_service.set_led("red")
+        uart_service.beep(1)
+        
+        return FaceVerifyResponse(
+            success=False,
+            user_name=None,
+            similarity=0.0,
+            message="Không thể truy cập camera backend"
+        )
+    
+    # Trích xuất embedding từ frame
+    new_embedding = uniface_service.extract_embedding(frame_bytes)
+    
+    if new_embedding is None:
+        # Ghi log thất bại
+        log = AccessLog(
+            user_name=None,
+            access_method=AccessMethod.FACE,
+            access_type=AccessType.ENTRY,
+            success=False,
+            details="Không phát hiện khuôn mặt"
+        )
+        db.add(log)
+        db.commit()
+        
+        uart_service.set_led("red")
+        uart_service.beep(1)
+        
+        return FaceVerifyResponse(
+            success=False,
+            user_name=None,
+            similarity=0.0,
+            message="Không phát hiện khuôn mặt"
+        )
+    
+    # Lấy tất cả người dùng có khuôn mặt
+    users = db.query(User).filter(User.face_embedding.isnot(None)).all()
+    
+    if not users:
+        log = AccessLog(
+            user_name=None,
+            access_method=AccessMethod.FACE,
+            access_type=AccessType.ENTRY,
+            success=False,
+            details="Chưa có người dùng nào đăng ký"
+        )
+        db.add(log)
+        db.commit()
+        
+        uart_service.set_led("red")
+        uart_service.beep(1)
+        
+        return FaceVerifyResponse(
+            success=False,
+            user_name=None,
+            similarity=0.0,
+            message="Chưa có người dùng nào đăng ký"
+        )
+    
+    best_match = None
+    best_similarity = 0.0
+    
+    # So sánh với từng người dùng
+    for user in users:
+        stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
+        similarity = uniface_service.compare_faces(new_embedding, stored_embedding)
+        
+        if similarity > best_similarity:
+            best_similarity = similarity
+            best_match = user
+    
+    # Kiểm tra ngưỡng (0.7 theo code mẫu)
+    threshold = 0.7
+    if best_similarity >= threshold:
+        # Xác thực thành công
+        log = AccessLog(
+            user_name=best_match.name,
+            access_method=AccessMethod.FACE,
+            access_type=AccessType.ENTRY,
+            success=True,
+            details=f"Độ tương đồng: {best_similarity:.3f}"
+        )
+        db.add(log)
+        db.commit()
+        
+        # Mở khóa cửa
+        uart_service.unlock_door(duration=5)
+        uart_service.set_led("green")
+        uart_service.beep(2)
+        
+        return FaceVerifyResponse(
+            success=True,
+            user_name=best_match.name,
+            similarity=best_similarity,
+            message=f"Chào mừng {best_match.name}!"
+        )
+    else:
+        # Xác thực thất bại
+        log = AccessLog(
+            user_name=None,
+            access_method=AccessMethod.FACE,
+            access_type=AccessType.ENTRY,
+            success=False,
+            details=f"Độ tương đồng cao nhất: {best_similarity:.3f}"
+        )
+        db.add(log)
+        db.commit()
+        
+        uart_service.set_led("red")
+        uart_service.beep(1)
+        
+        return FaceVerifyResponse(
+            success=False,
+            user_name=None,
+            similarity=best_similarity,
+            message="Khuôn mặt không khớp"
+        )
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
