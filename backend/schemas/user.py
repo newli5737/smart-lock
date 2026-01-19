@@ -18,10 +18,8 @@ class UserResponse(UserBase):
 
 class FaceRegisterRequest(BaseModel):
     name: str
-    # image will be sent as multipart/form-data
 
 class FaceVerifyRequest(BaseModel):
-    # image will be sent as multipart/form-data
     pass
 
 class FaceVerifyResponse(BaseModel):

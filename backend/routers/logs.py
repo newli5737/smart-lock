@@ -18,11 +18,9 @@ async def get_logs(
     success: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
-    """Lấy danh sách nhật ký truy cập với bộ lọc"""
     
     query = db.query(AccessLog)
     
-    # Áp dụng bộ lọc
     if method:
         query = query.filter(AccessLog.access_method == method)
     if access_type:
@@ -30,10 +28,8 @@ async def get_logs(
     if success is not None:
         query = query.filter(AccessLog.success == success)
     
-    # Đếm tổng số
     total = query.count()
     
-    # Lấy dữ liệu với phân trang
     logs = query.order_by(desc(AccessLog.timestamp)).offset(offset).limit(limit).all()
     
     return AccessLogListResponse(
@@ -57,34 +53,26 @@ async def get_stats(
     days: int = Query(7, ge=1, le=365),
     db: Session = Depends(get_db)
 ):
-    """Lấy thống kê truy cập"""
     
-    # Tính ngày bắt đầu
     start_date = datetime.now() - timedelta(days=days)
     
-    # Lọc logs trong khoảng thời gian
     logs_query = db.query(AccessLog).filter(AccessLog.timestamp >= start_date)
     
-    # Tổng số lần truy cập
     total_accesses = logs_query.count()
     
-    # Số lần thành công/thất bại
     successful_accesses = logs_query.filter(AccessLog.success == True).count()
     failed_accesses = logs_query.filter(AccessLog.success == False).count()
     
-    # Thống kê theo phương thức
     by_method = {}
     for method in AccessMethod:
         count = logs_query.filter(AccessLog.access_method == method).count()
         by_method[method.value] = count
     
-    # Thống kê theo loại (entry/exit)
     by_type = {}
     for access_type in AccessType:
         count = logs_query.filter(AccessLog.access_type == access_type).count()
         by_type[access_type.value] = count
     
-    # Lấy 10 logs gần nhất
     recent_logs = logs_query.order_by(desc(AccessLog.timestamp)).limit(10).all()
     
     return AccessStatsResponse(
@@ -109,7 +97,6 @@ async def get_stats(
 
 @router.delete("/{log_id}")
 async def delete_log(log_id: int, db: Session = Depends(get_db)):
-    """Xóa một nhật ký"""
     log = db.query(AccessLog).filter(AccessLog.id == log_id).first()
     
     if not log:
@@ -122,7 +109,6 @@ async def delete_log(log_id: int, db: Session = Depends(get_db)):
 
 @router.delete("/clear-all")
 async def clear_all_logs(db: Session = Depends(get_db)):
-    """Xóa tất cả nhật ký"""
     count = db.query(AccessLog).delete()
     db.commit()
     

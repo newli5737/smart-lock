@@ -6,13 +6,11 @@ router = APIRouter(prefix="/api/state", tags=["State Management"])
 
 @router.get("", response_model=StateResponse)
 async def get_state():
-    """Lấy trạng thái hệ thống hiện tại"""
     state = state_manager.get_state()
     return StateResponse(**state)
 
 @router.post("/mode", response_model=SetModeResponse)
 async def set_mode(request: SetModeRequest):
-    """Chuyển đổi chế độ hệ thống"""
     success = state_manager.set_mode(request.mode)
     
     if success:
@@ -29,7 +27,6 @@ async def set_mode(request: SetModeRequest):
 
 @router.get("/status")
 async def get_status():
-    """Lấy trạng thái chi tiết của hệ thống"""
     return {
         "mode": state_manager.mode.value,
         "door_status": state_manager.door_status.value,

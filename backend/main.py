@@ -13,7 +13,7 @@ from database import SessionLocal
 async def lifespan(app: FastAPI):
 
     Base.metadata.create_all(bind=engine)
-    print("✓ Database tables created")
+    print("Database tables created")
     
     from models import KeypadPassword
     import hashlib
@@ -25,20 +25,19 @@ async def lifespan(app: FastAPI):
             default_pwd = KeypadPassword(password_hash=default_hash)
             db.add(default_pwd)
             db.commit()
-            print("✓ Default password (123456) initialized")
+            print("Default password (123456) initialized")
         else:
-            print("ℹ Password already exists")
+            print("Password already exists")
     finally:
         db.close()
     
-    print("ℹ Waiting for UART configuration from Frontend...")
+    print("Waiting for UART configuration from Frontend...")
     
     yield
     
     print("Shutting down Smart Lock Backend...")
     uart_service.disconnect()
 
-# Tạo FastAPI app
 app = FastAPI(
     title="Smart Lock API",
     description="IoT Smart Lock với Face Recognition, RFID, và Keypad",
@@ -46,7 +45,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -55,7 +53,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -63,16 +60,15 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        print(f"✅ WebSocket client connected. Total: {len(self.active_connections)}")
+        print(f"WebSocket client connected. Total: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-        print(f"❌ WebSocket client disconnected. Total: {len(self.active_connections)}")
+        print(f"WebSocket client disconnected. Total: {len(self.active_connections)}")
 
     async def broadcast(self, message: dict):
-        """Broadcast message to all connected clients"""
-        for connection in self.active_connections[:]:  # Copy list to avoid modification during iteration
+        for connection in self.active_connections[:]:  
             try:
                 await connection.send_json(message)
             except Exception as e:
@@ -84,7 +80,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Include routers
 app.include_router(state.router)
 app.include_router(face.router)
 app.include_router(fingerprint.router)
@@ -106,7 +101,6 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "uart_connected": uart_service.serial_conn is not None and uart_service.serial_conn.is_open,
@@ -117,13 +111,10 @@ async def health():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time updates"""
     await websocket_manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive and receive messages from client
             data = await websocket.receive_text()
-            # Echo back or handle client messages if needed
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
     except Exception as e:

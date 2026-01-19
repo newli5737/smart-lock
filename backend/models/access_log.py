@@ -16,9 +16,9 @@ class AccessLog(Base):
     __tablename__ = "access_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_name = Column(String, nullable=True)  # Null if access denied
+    user_name = Column(String, nullable=True)  
     access_method = Column(SQLEnum(AccessMethod), nullable=False)
-    access_type = Column(SQLEnum(AccessType), nullable=False)  # entry or exit
+    access_type = Column(SQLEnum(AccessType), nullable=False)  
     success = Column(Boolean, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    details = Column(String, nullable=True)  # Additional info like error messages
+    details = Column(String, nullable=True) 

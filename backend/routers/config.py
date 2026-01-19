@@ -14,7 +14,6 @@ class UpdateConfigRequest(BaseModel):
 
 @router.get("")
 async def get_config():
-    """Lấy cấu hình hiện tại"""
     config = config_manager.get_config()
     return {
         "uart_port": config.uart_port,
@@ -25,19 +24,15 @@ async def get_config():
 
 @router.post("/update")
 async def update_config(request: UpdateConfigRequest):
-    """Cập nhật cấu hình từ frontend và kết nối UART"""
     updates = request.model_dump(exclude_none=True)
     config_manager.update_config(**updates)
     
-    # Logic kết nối lại UART nếu có config liên quan
     if request.uart_port or request.uart_baudrate:
-        print("🔄 UART Config changed, reconnecting...")
+        print("UART Config changed, reconnecting...")
         uart_service.disconnect()
         
-        # Lấy config mới nhất
         current_config = config_manager.get_config()
         
-        # Kết nối lại
         if uart_service.connect(current_config.uart_port, current_config.uart_baudrate):
              uart_service.start_listening(handle_esp32_message)
         else:

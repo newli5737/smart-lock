@@ -14,16 +14,13 @@ async def register_rfid(
     card_data: RFIDCardCreate,
     db: Session = Depends(get_db)
 ):
-    """Đăng ký thẻ RFID mới (chỉ trong chế độ Registration)"""
     
-    # Kiểm tra chế độ
     if not state_manager.is_registration_mode():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ có thể đăng ký RFID trong chế độ Registration"
         )
     
-    # Kiểm tra thẻ đã tồn tại chưa
     existing_card = db.query(RFIDCard).filter(RFIDCard.card_uid == card_data.card_uid).first()
     if existing_card:
         raise HTTPException(
@@ -31,7 +28,6 @@ async def register_rfid(
             detail="Thẻ RFID đã được đăng ký"
         )
     
-    # Tạo hoặc lấy user
     user = db.query(User).filter(User.name == card_data.user_name).first()
     if not user:
         user = User(name=card_data.user_name)
@@ -39,7 +35,6 @@ async def register_rfid(
         db.commit()
         db.refresh(user)
     
-    # Lưu thẻ RFID
     rfid_card = RFIDCard(
         card_uid=card_data.card_uid,
         user_id=user.id,
@@ -49,7 +44,6 @@ async def register_rfid(
     db.commit()
     db.refresh(rfid_card)
     
-    # Phản hồi LED xanh và beep
     uart_service.set_led("green")
     uart_service.beep(2)
     
@@ -67,23 +61,19 @@ async def verify_rfid(
     request: RFIDVerifyRequest,
     db: Session = Depends(get_db)
 ):
-    """Xác thực thẻ RFID (chỉ trong chế độ Entry/Exit)"""
     
-    # Kiểm tra chế độ
     if not state_manager.is_entry_exit_mode():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ có thể xác thực trong chế độ Entry/Exit"
         )
     
-    # Tìm thẻ trong database
     rfid_card = db.query(RFIDCard).filter(
         RFIDCard.card_uid == request.card_uid,
         RFIDCard.is_active == True
     ).first()
     
     if rfid_card:
-        # Xác thực thành công
         log = AccessLog(
             user_name=rfid_card.user_name,
             access_method=AccessMethod.RFID,
@@ -94,7 +84,6 @@ async def verify_rfid(
         db.add(log)
         db.commit()
         
-        # Mở khóa cửa
         uart_service.unlock_door(duration=5)
         uart_service.set_led("green")
         uart_service.beep(2)
@@ -105,7 +94,6 @@ async def verify_rfid(
             message=f"Chào mừng {rfid_card.user_name}!"
         )
     else:
-        # Xác thực thất bại
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.RFID,
@@ -127,7 +115,6 @@ async def verify_rfid(
 
 @router.get("/cards", response_model=List[RFIDCardResponse])
 async def get_cards(db: Session = Depends(get_db)):
-    """Lấy danh sách thẻ RFID đã đăng ký"""
     cards = db.query(RFIDCard).all()
     
     return [
@@ -144,7 +131,6 @@ async def get_cards(db: Session = Depends(get_db)):
 
 @router.delete("/{card_id}")
 async def delete_card(card_id: int, db: Session = Depends(get_db)):
-    """Xóa thẻ RFID"""
     card = db.query(RFIDCard).filter(RFIDCard.id == card_id).first()
     
     if not card:

@@ -47,8 +47,7 @@ class UARTService:
         self.message_callback: Optional[Callable] = None
         
     def connect(self, port: str = None, baudrate: int = None):
-        """Connect to ESP32 via UART"""
-        # Update config if provided
+
         if port:
             self.port = port
         if baudrate:
@@ -60,54 +59,47 @@ class UARTService:
                 baudrate=self.baudrate,
                 timeout=1
             )
-            print(f"✓ Connected to ESP32 on {self.port} at {self.baudrate} baud")
+            print(f"Connected to ESP32 on {self.port} at {self.baudrate} baud")
             return True
         except serial.SerialException as e:
-            print(f"✗ Failed to connect to ESP32: {e}")
+            print(f"Failed to connect to ESP32: {e}")
             return False
     
     def disconnect(self):
-        """Disconnect from ESP32"""
         self.running = False
         if self.listener_thread:
             self.listener_thread.join(timeout=2)
         if self.serial_conn and self.serial_conn.is_open:
             self.serial_conn.close()
-            print("✓ Disconnected from ESP32")
+            print("Disconnected from ESP32")
     
     def send_message(self, message: dict) -> bool:
-        """Send JSON message to ESP32"""
         if not self.serial_conn or not self.serial_conn.is_open:
-            print("✗ Serial connection not open")
+            print("Serial connection not open")
             return False
         
         try:
             json_str = json.dumps(message) + "\n"
             self.serial_conn.write(json_str.encode('utf-8'))
-            print(f"→ Sent to ESP32: {message}")
+            print(f"Sent to ESP32: {message}")
             return True
         except Exception as e:
-            print(f"✗ Error sending message: {e}")
+            print(f"Error sending message: {e}")
             return False
     
     def unlock_door(self, duration: int = 5):
-        """Send unlock command to ESP32"""
         return self.send_message({"cmd": "unlock", "duration": duration})
     
     def lock_door(self):
-        """Send lock command to ESP32"""
         return self.send_message({"cmd": "lock"})
     
     def set_led(self, color: str):
-        """Set LED color (green, red, blue, off)"""
         return self.send_message({"cmd": "led", "color": color})
     
     def beep(self, times: int = 1):
-        """Trigger beep sound"""
         return self.send_message({"cmd": "beep", "times": times})
     
     def _listen(self):
-        """Background thread to listen for messages from ESP32"""
         while self.running:
             try:
                 if self.serial_conn and self.serial_conn.in_waiting > 0:
@@ -115,23 +107,21 @@ class UARTService:
                     if line:
                         try:
                             message = json.loads(line)
-                            print(f"← Received from ESP32: {message}")
+                            print(f"Received from ESP32: {message}")
                             if self.message_callback:
                                 self.message_callback(message)
                         except json.JSONDecodeError:
-                            print(f"✗ Invalid JSON from ESP32: {line}")
+                            print(f"Invalid JSON from ESP32: {line}")
                 time.sleep(0.1)
             except Exception as e:
-                print(f"✗ Error in listener thread: {e}")
+                print(f"Error in listener thread: {e}")
                 time.sleep(1)
     
     def start_listening(self, callback: Callable):
-        """Start listening for messages from ESP32"""
         self.message_callback = callback
         self.running = True
         self.listener_thread = threading.Thread(target=self._listen, daemon=True)
         self.listener_thread.start()
-        print("✓ Started listening for ESP32 messages")
+        print("Started listening for ESP32 messages")
 
-# Global UART service instance
 uart_service = UARTService()

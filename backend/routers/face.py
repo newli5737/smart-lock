@@ -15,19 +15,15 @@ from datetime import datetime
 
 router = APIRouter(prefix="/api/face", tags=["Face Recognition"])
 
-# Tạo thư mục uploads nếu chưa có
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def save_uploaded_image(image: UploadFile, user_name: str) -> str:
-    """Lưu ảnh upload và trả về đường dẫn"""
-    # Tạo tên file unique
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_extension = os.path.splitext(image.filename)[1] or ".jpg"
     filename = f"{user_name}_{timestamp}_{uuid.uuid4().hex[:8]}{file_extension}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     
-    # Lưu file
     with open(filepath, "wb") as f:
         f.write(image.file.read())
     
@@ -39,28 +35,22 @@ async def register_face(
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """Đăng ký khuôn mặt mới (chỉ trong chế độ Registration)"""
     
-    # Kiểm tra chế độ
     if not state_manager.is_registration_mode():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ có thể đăng ký khuôn mặt trong chế độ Registration"
         )
     
-    # Đọc ảnh
     image_bytes = await image.read()
     
-    # Lưu ảnh vào thư mục uploads
-    image.file.seek(0)  # Reset file pointer
+    image.file.seek(0)  
     image_path = save_uploaded_image(image, name)
-    print(f"✓ Saved image to: {image_path}")
+    print(f"Saved image to: {image_path}")
     
-    # Trích xuất embedding
     embedding = uniface_service.extract_embedding(image_bytes)
     
     if embedding is None:
-        # Xóa ảnh đã lưu nếu không phát hiện khuôn mặt
         if os.path.exists(image_path):
             os.remove(image_path)
         raise HTTPException(
@@ -68,7 +58,6 @@ async def register_face(
             detail="Không phát hiện khuôn mặt trong ảnh"
         )
     
-    # Lưu vào database
     user = User(
         name=name,
         face_embedding=embedding.tobytes()
@@ -77,7 +66,6 @@ async def register_face(
     db.commit()
     db.refresh(user)
     
-    # Phản hồi LED xanh và beep
     uart_service.set_led("green")
     uart_service.beep(2)
     
@@ -93,23 +81,18 @@ async def verify_face(
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """Xác thực khuôn mặt (chỉ trong chế độ Entry/Exit)"""
-    
-    # Kiểm tra chế độ
+
     if not state_manager.is_entry_exit_mode():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ có thể xác thực trong chế độ Entry/Exit"
         )
     
-    # Đọc ảnh
     image_bytes = await image.read()
     
-    # Trích xuất embedding
     new_embedding = uniface_service.extract_embedding(image_bytes)
     
     if new_embedding is None:
-        # Ghi log thất bại
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
@@ -130,7 +113,6 @@ async def verify_face(
             message="Không phát hiện khuôn mặt"
         )
     
-    # Lấy tất cả người dùng có khuôn mặt
     users = db.query(User).filter(User.face_embedding.isnot(None)).all()
     
     if not users:
@@ -157,7 +139,6 @@ async def verify_face(
     best_match = None
     best_similarity = 0.0
     
-    # So sánh với từng người dùng
     for user in users:
         stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
         similarity = uniface_service.compare_faces(new_embedding, stored_embedding)
@@ -166,10 +147,8 @@ async def verify_face(
             best_similarity = similarity
             best_match = user
     
-    # Kiểm tra ngưỡng (0.7 theo code mẫu)
     threshold = 0.7
     if best_similarity >= threshold:
-        # Xác thực thành công
         log = AccessLog(
             user_name=best_match.name,
             access_method=AccessMethod.FACE,
@@ -180,7 +159,6 @@ async def verify_face(
         db.add(log)
         db.commit()
         
-        # Mở khóa cửa
         uart_service.unlock_door(duration=5)
         uart_service.set_led("green")
         uart_service.beep(2)
@@ -192,7 +170,6 @@ async def verify_face(
             message=f"Chào mừng {best_match.name}!"
         )
     else:
-        # Xác thực thất bại
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
@@ -215,7 +192,6 @@ async def verify_face(
 
 @router.get("/users", response_model=List[UserResponse])
 async def get_users(db: Session = Depends(get_db)):
-    """Lấy danh sách người dùng đã đăng ký khuôn mặt"""
     users = db.query(User).filter(User.face_embedding.isnot(None)).all()
     
     return [
@@ -230,16 +206,13 @@ async def get_users(db: Session = Depends(get_db)):
 
 @router.post("/verify-from-stream", response_model=FaceVerifyResponse)
 async def verify_face_from_stream(db: Session = Depends(get_db)):
-    """Xác thực khuôn mặt từ camera backend (chỉ trong chế độ Entry/Exit)"""
     
-    # Kiểm tra chế độ
     if not state_manager.is_entry_exit_mode():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ có thể xác thực trong chế độ Entry/Exit"
         )
     
-    # Lấy frame hiện tại từ camera backend
     frame_bytes = camera_service.get_frame()
     
     if frame_bytes is None:
@@ -253,11 +226,9 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             message="Không thể truy cập camera backend"
         )
     
-    # Trích xuất embedding từ frame
     new_embedding = uniface_service.extract_embedding(frame_bytes)
     
     if new_embedding is None:
-        # Ghi log thất bại
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
@@ -278,7 +249,6 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             message="Không phát hiện khuôn mặt"
         )
     
-    # Lấy tất cả người dùng có khuôn mặt
     users = db.query(User).filter(User.face_embedding.isnot(None)).all()
     
     if not users:
@@ -305,7 +275,6 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
     best_match = None
     best_similarity = 0.0
     
-    # So sánh với từng người dùng
     for user in users:
         stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
         similarity = uniface_service.compare_faces(new_embedding, stored_embedding)
@@ -314,10 +283,8 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             best_similarity = similarity
             best_match = user
     
-    # Kiểm tra ngưỡng (0.7 theo code mẫu)
     threshold = 0.7
     if best_similarity >= threshold:
-        # Xác thực thành công
         log = AccessLog(
             user_name=best_match.name,
             access_method=AccessMethod.FACE,
@@ -328,7 +295,6 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
         db.add(log)
         db.commit()
         
-        # Mở khóa cửa
         uart_service.unlock_door(duration=5)
         uart_service.set_led("green")
         uart_service.beep(2)
@@ -340,7 +306,6 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             message=f"Chào mừng {best_match.name}!"
         )
     else:
-        # Xác thực thất bại
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
@@ -363,7 +328,6 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
-    """Xóa người dùng"""
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:
