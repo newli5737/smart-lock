@@ -172,7 +172,7 @@ async def verify_face(
         db.add(log)
         db.commit()
         
-        uart_service.unlock_door(duration=5)
+        # uart_service.unlock_door(duration=5)
         uart_service.set_led("green")
         uart_service.beep(2)
         
@@ -310,7 +310,7 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
         db.add(log)
         db.commit()
         
-        uart_service.unlock_door(duration=5)
+        # uart_service.unlock_door(duration=5)
         uart_service.set_led("green")
         uart_service.beep(2)
         

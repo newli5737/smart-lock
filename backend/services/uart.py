@@ -40,7 +40,7 @@ class UARTService(metaclass=SingletonMeta):
     def __init__(self):
         from config import config_manager
         self.config_manager = config_manager
-        self.port = config_manager.get("uart_port", "COM3")
+        self.port = config_manager.get("uart_port", "COM6")
         self.baudrate = config_manager.get("uart_baudrate", 115200)
         self.serial_conn: Optional[serial.Serial] = None
         self.running = False

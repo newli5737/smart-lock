@@ -88,22 +88,6 @@ export function KeypadPage() {
         <p className="text-muted-foreground">Cập nhật mật khẩu cho bàn phím số</p>
       </div>
 
-      {/* Security Warning */}
-      <div className="bg-warning/10 border border-warning/20 rounded-xl p-4">
-        <div className="flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-warning mb-1">Lưu ý bảo mật</h4>
-            <ul className="text-sm text-warning/80 space-y-1">
-              <li>• Không chia sẻ mật khẩu với người không có thẩm quyền</li>
-              <li>• Thay đổi mật khẩu định kỳ (khuyến nghị 3 tháng/lần)</li>
-              <li>• Sử dụng mật khẩu mạnh, khó đoán</li>
-              <li>• Keypad chỉ chấp nhận ký tự số</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
       {/* Password Update Form */}
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6">

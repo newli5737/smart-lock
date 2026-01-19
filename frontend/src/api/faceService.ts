@@ -13,7 +13,7 @@ export const faceService = {
                 'Content-Type': 'multipart/form-data',
             },
         });
-        return response.data;
+        return response as unknown as User;
     },
 
     // Verify face
@@ -26,19 +26,19 @@ export const faceService = {
                 'Content-Type': 'multipart/form-data',
             },
         });
-        return response.data;
+        return response as unknown as FaceVerifyResponse;
     },
 
     // Verify face from backend camera stream
     async verifyFromStream(): Promise<FaceVerifyResponse> {
         const response = await apiClient.post<FaceVerifyResponse>('/api/face/verify-from-stream');
-        return response.data;
+        return response as unknown as FaceVerifyResponse;
     },
 
     // Get all users
     async getUsers(): Promise<User[]> {
         const response = await apiClient.get<User[]>('/api/face/users');
-        return response.data;
+        return response as unknown as User[];
     },
 
     // Delete user

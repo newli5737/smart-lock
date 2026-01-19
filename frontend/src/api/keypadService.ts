@@ -8,7 +8,7 @@ export const keypadService = {
             password,
             old_password: oldPassword
         });
-        return response.data;
+        return response as unknown as { success: boolean; message: string };
     },
 
     // Verify password
@@ -16,12 +16,12 @@ export const keypadService = {
         const response = await apiClient.post<KeypadVerifyResponse>('/api/keypad/verify', {
             password,
         });
-        return response.data;
+        return response as unknown as KeypadVerifyResponse;
     },
 
     // Check if password exists
     async hasPassword(): Promise<{ has_password: boolean }> {
         const response = await apiClient.get('/api/keypad/has-password');
-        return response.data;
+        return response as unknown as { has_password: boolean };
     },
 };

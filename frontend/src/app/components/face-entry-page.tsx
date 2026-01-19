@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Camera, User, Shield, Clock, CheckCircle, XCircle, RefreshCw, Video } from 'lucide-react';
-import { toast } from 'sonner';
-import { faceService } from '@/api';
+import { Camera, User, Shield, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useLockStore } from '@/store/lockStore';
 
 export function FaceEntryPage() {
   const [isStreamActive, setIsStreamActive] = useState(true);
   const [streamError, setStreamError] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+
   const { mode, doorStatus } = useLockStore();
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -27,25 +25,7 @@ export function FaceEntryPage() {
     setTimeout(() => setIsStreamActive(true), 500);
   };
 
-  // Manual verify fallback
-  const handleManualVerify = async () => {
-    setIsVerifying(true);
 
-    try {
-      const result = await faceService.verifyFromStream();
-
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error: any) {
-      console.error('Verification error:', error);
-      toast.error(error.response?.data?.detail || 'Lỗi kết nối đến server');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -128,26 +108,7 @@ export function FaceEntryPage() {
           )}
         </div>
 
-        {/* Manual verify button */}
-        <div className="p-4 border-t border-border">
-          <button
-            onClick={handleManualVerify}
-            disabled={isVerifying}
-            className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isVerifying ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Đang xác thực...
-              </>
-            ) : (
-              <>
-                <Video className="w-5 h-5" />
-                Xác thực thủ công (chụp 1 frame)
-              </>
-            )}
-          </button>
-        </div>
+
       </div>
 
       {/* Instructions */}

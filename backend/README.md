@@ -28,7 +28,7 @@ Chỉnh sửa file `.env`:
 
 ```env
 DATABASE_URL=sqlite:///./smart_lock.db
-UART_PORT=COM3
+UART_PORT=COM6
 UART_BAUDRATE=115200
 FACE_SIMILARITY_THRESHOLD=0.6
 API_HOST=0.0.0.0

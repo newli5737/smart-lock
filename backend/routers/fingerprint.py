@@ -98,7 +98,7 @@ async def verify_fingerprint(
         db.add(log)
         db.commit()
         
-        uart_service.unlock_door(duration=5)
+        # uart_service.unlock_door(duration=5)
         uart_service.beep(2)
         
         return FingerprintVerifyResponse(

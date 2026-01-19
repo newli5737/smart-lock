@@ -29,8 +29,8 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     { id: 'face-register', label: 'Đăng ký khuôn mặt', icon: Smile },
     { id: 'keypad', label: 'Mật khẩu Keypad', icon: KeyRound },
     { id: 'history', label: 'Lịch sử ra vào', icon: History },
-    { id: 'settings', label: 'Cài đặt hệ thống', icon: Settings },
     { id: 'users', label: 'Quản lý người dùng', icon: UserIcon },
+    { id: 'settings', label: 'Cài đặt hệ thống', icon: Settings },
   ];
 
   return (

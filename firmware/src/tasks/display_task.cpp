@@ -27,8 +27,6 @@ void vDisplayTask(void *pvParameters) {
   
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-  lcd.clear();
-  lcd.print("San sang...");
   Serial.println("LCD:READY");
 
   ControlCommand cmd;
@@ -45,8 +43,6 @@ void vDisplayTask(void *pvParameters) {
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
         lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("San sang...");
       }
     }
   }

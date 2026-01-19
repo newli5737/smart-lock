@@ -66,7 +66,7 @@ export function SettingsPage() {
                 value={formData.uart_port}
                 onChange={(e) => setFormData({ ...formData, uart_port: e.target.value })}
                 className="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="VD: COM3 hoặc /dev/ttyUSB0"
+                placeholder="VD: COM6 hoặc /dev/ttyUSB0"
               />
             </div>
             <p className="text-sm text-muted-foreground mt-1">

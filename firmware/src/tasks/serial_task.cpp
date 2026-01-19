@@ -31,6 +31,15 @@ void vSerialTask(void *pvParameters) {
             strcpy(dCmd.text, "DOOR UNLOCKED");
             xQueueSend(xDisplayQueue, &dCmd, 0);
 
+          } else if (strcmp(cmd, "display") == 0) {
+            ControlCommand dCmd;
+            dCmd.type = CMD_UPDATE_DISPLAY;
+            const char* msg = doc["text"];
+            if (msg) {
+                strncpy(dCmd.text, msg, 16);
+                dCmd.text[16] = 0;
+                xQueueSend(xDisplayQueue, &dCmd, 0);
+            }
           } else if (strcmp(cmd, "lock") == 0) {
             qCmd.type = CMD_LOCK;
             xQueueSend(xCommandQueue, &qCmd, portMAX_DELAY);

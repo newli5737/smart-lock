@@ -17,4 +17,6 @@ dependencies = [
     "numpy>=2.2.1",
     "opencv-python>=4.10.0.84",
     "paho-mqtt<2.0.0",
+    "pytz>=2025.2",
+    "unidecode>=1.4.0",
 ]

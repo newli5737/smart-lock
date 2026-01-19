@@ -127,7 +127,7 @@ def handle_esp32_message(message: dict):
                         db.add(log)
                         db.commit()
                         
-                        uart_service.unlock_door(duration=5)
+                        # uart_service.unlock_door(duration=5)
                         uart_service.beep(2)
                         
                         try:
@@ -178,8 +178,11 @@ def handle_esp32_message(message: dict):
                 db.add(log)
                 db.commit()
                 
-                uart_service.unlock_door(duration=5)
+                # uart_service.unlock_door(duration=5)
                 uart_service.beep(2)
+                
+                # Update LCD
+                uart_service.send_command({"cmd": "display", "text": "Mat khau dung"})
             else:
                 log = AccessLog(
                     user_name=None,
@@ -192,5 +195,8 @@ def handle_esp32_message(message: dict):
                 db.commit()
                 
                 uart_service.beep(1)
+                
+                # Update LCD
+                uart_service.send_command({"cmd": "display", "text": "Sai mat khau"})
         finally:
             db.close()

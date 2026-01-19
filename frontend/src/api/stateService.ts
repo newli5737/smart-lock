@@ -4,8 +4,7 @@ import type { SystemState } from '../types';
 export const stateService = {
     // Get current system state
     async getState(): Promise<SystemState> {
-        const response = await apiClient.get<SystemState>('/api/state');
-        return response.data;
+        return await apiClient.get<SystemState>('/api/state') as unknown as SystemState;
     },
 
     // Switch mode
@@ -15,7 +14,6 @@ export const stateService = {
 
     // Get detailed status
     async getStatus(): Promise<any> {
-        const response = await apiClient.get('/api/state/status');
-        return response.data;
+        return await apiClient.get('/api/state/status');
     },
 };

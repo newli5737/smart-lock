@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 class RuntimeConfig(BaseModel):
     # UART Configuration
-    uart_port: str = "COM3"
+    uart_port: str = "COM6"
     uart_baudrate: int = 115200
     
     # Face Recognition

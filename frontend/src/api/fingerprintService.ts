@@ -9,7 +9,7 @@ export const fingerprintService = {
             user_name: userName,
             finger_position: fingerPosition
         });
-        return response.data;
+        return response as unknown as Fingerprint;
     },
 
     // Verify fingerprint
@@ -17,13 +17,13 @@ export const fingerprintService = {
         const response = await apiClient.post<FingerprintVerifyResponse>('/api/fingerprint/verify', {
             fingerprint_id: fingerprintId
         });
-        return response.data;
+        return response as unknown as FingerprintVerifyResponse;
     },
 
     // Get all fingerprints
     async getPrints(): Promise<Fingerprint[]> {
         const response = await apiClient.get<Fingerprint[]>('/api/fingerprint/prints');
-        return response.data;
+        return response as unknown as Fingerprint[];
     },
 
     // Delete fingerprint
@@ -39,12 +39,12 @@ export const fingerprintService = {
         count?: number
     }> {
         const response = await apiClient.get('/api/fingerprint/sensor-prints');
-        return response.data;
+        return response as unknown as { success: boolean; message: string; fingerprints?: number[]; count?: number };
     },
 
     // Clear all fingerprints from database and sensor
     async clearAll(): Promise<{ success: boolean; message: string }> {
         const response = await apiClient.delete('/api/fingerprint/clear-all');
-        return response.data;
+        return response as unknown as { success: boolean; message: string };
     },
 };

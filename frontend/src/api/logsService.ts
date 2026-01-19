@@ -11,7 +11,7 @@ export const logsService = {
         success?: boolean;
     }): Promise<{ logs: AccessLog[]; total: number }> {
         const response = await apiClient.get('/api/logs', { params });
-        return response.data;
+        return response as unknown as { logs: AccessLog[]; total: number };
     },
 
     // Get statistics
@@ -19,7 +19,7 @@ export const logsService = {
         const response = await apiClient.get<AccessStats>('/api/logs/stats', {
             params: { days },
         });
-        return response.data;
+        return response as unknown as AccessStats;
     },
 
     // Delete log

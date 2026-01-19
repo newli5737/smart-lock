@@ -35,6 +35,7 @@ void vInputTask(void *pvParameters) {
 
   String keyBuffer = "";
   unsigned long lastKeyTime = 0;
+  unsigned long lastFingerprintTime = 0; // Cooldown timer
 
   for (;;) {
     // Handle enrollment mode
@@ -85,7 +86,9 @@ void vInputTask(void *pvParameters) {
       continue;
     }
 
-    uint8_t p = finger.getImage();
+    // Fingerprint cooldown check
+    if (millis() - lastFingerprintTime > 1000) { // 1 second cooldown
+      uint8_t p = finger.getImage();
     if (p == FINGERPRINT_OK) {
       p = finger.image2Tz();
       if (p == FINGERPRINT_OK) {
@@ -104,6 +107,14 @@ void vInputTask(void *pvParameters) {
           beepCmd.value = 2; 
           xQueueSend(xCommandQueue, &beepCmd, 0);
           
+          // Display Valid
+          ControlCommand dCmd;
+          dCmd.type = CMD_UPDATE_DISPLAY;
+          strcpy(dCmd.text, "Van tay hop le");
+          xQueueSend(xDisplayQueue, &dCmd, 0);
+
+          lastFingerprintTime = millis(); // Reset cooldown
+
           ControlCommand ledCmd;
           ledCmd.type = CMD_LED;
           ledCmd.value = 2; 
@@ -114,13 +125,22 @@ void vInputTask(void *pvParameters) {
           beepCmd.value = -3; 
           xQueueSend(xCommandQueue, &beepCmd, 0);
           
+          // Display Invalid
+          ControlCommand dCmd;
+          dCmd.type = CMD_UPDATE_DISPLAY;
+          strcpy(dCmd.text, "Khong hop le");
+          xQueueSend(xDisplayQueue, &dCmd, 0);
+
+          lastFingerprintTime = millis(); // Reset cooldown
+
           ControlCommand ledCmd;
           ledCmd.type = CMD_LED;
-          ledCmd.value = 3; 
+          ledCmd.value = 1; // Red LED ON (assuming 1 is ON/Red)
           xQueueSend(xCommandQueue, &ledCmd, 0);
         }
       }
     }
+  }
 
     char key = keypad.getKey();
     if (key) {
@@ -155,6 +175,17 @@ void vInputTask(void *pvParameters) {
         keyBuffer += key;
         Serial.print("KEYPAD_BUFFER:");
         Serial.println(keyBuffer.c_str());
+        
+        // Show masked password on LCD
+        String masked = "";
+        for(int i=0; i<keyBuffer.length(); i++) masked += "*";
+        
+        ControlCommand dCmd;
+        dCmd.type = CMD_UPDATE_DISPLAY;
+        // Limit length to avoid overflow
+        strncpy(dCmd.text, masked.c_str(), 16);
+        dCmd.text[16] = 0; // Ensure null termination
+        xQueueSend(xDisplayQueue, &dCmd, 0);
       }
     }
 
