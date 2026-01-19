@@ -6,8 +6,7 @@ Baud Rate: 115200
 Line Ending: \n
 
 Messages FROM ESP32 to Backend:
-1. RFID Card Scanned:
-   {"type": "rfid", "uid": "A1B2C3D4"}
+
 
 2. Keypad Input:
    {"type": "keypad", "password": "123456"}
@@ -35,7 +34,9 @@ import threading
 import time
 from typing import Callable, Optional
 
-class UARTService:
+from services.singleton import SingletonMeta
+
+class UARTService(metaclass=SingletonMeta):
     def __init__(self):
         from config import config_manager
         self.config_manager = config_manager

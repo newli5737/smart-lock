@@ -9,6 +9,7 @@ interface LockStore {
 
     // API Configuration
     config: RuntimeConfig | null;
+    apiBaseURL: string;
 
     // Statistics
     stats: AccessStats | null;
@@ -37,6 +38,7 @@ export const useLockStore = create<LockStore>((set) => ({
     mode: 'entry_exit',
     doorStatus: 'locked',
     config: null,
+    apiBaseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
     stats: null,
     isLoading: false,
     error: null,

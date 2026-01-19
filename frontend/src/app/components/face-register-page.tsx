@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, User, Check, AlertCircle, RefreshCw, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Camera, User, Check, AlertCircle, RefreshCw, X, Upload, Image as ImageIcon, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { faceService } from '@/api';
+import type { User as UserType } from '@/types';
 
 export function FaceRegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -10,8 +11,27 @@ export function FaceRegisterPage() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<UserType[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
   const webcamRef = useRef<Webcam>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchRegisteredUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const users = await faceService.getUsers();
+      setRegisteredUsers(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegisteredUsers();
+  }, []);
 
   const handleStartCamera = () => {
     setIsCameraActive(true);
@@ -88,11 +108,32 @@ export function FaceRegisterPage() {
       setFullName('');
       setCapturedImage(null);
       setIsCameraActive(false);
+
+      // Refresh users list
+      fetchRegisteredUsers();
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.response?.data?.detail || 'Đăng ký thất bại');
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, userName: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa khuôn mặt của "${userName}"?`)) {
+      return;
+    }
+
+    setDeletingUserId(userId);
+    try {
+      await faceService.deleteUser(userId);
+      toast.success(`Đã xóa khuôn mặt của ${userName}`);
+      fetchRegisteredUsers();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.detail || 'Xóa thất bại');
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -158,8 +199,8 @@ export function FaceRegisterPage() {
                 setIsCameraActive(false);
               }}
               className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${uploadMethod === 'camera'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:border-primary/50'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border hover:border-primary/50'
                 }`}
             >
               <Camera className="w-5 h-5" />
@@ -172,8 +213,8 @@ export function FaceRegisterPage() {
                 setIsCameraActive(false);
               }}
               className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${uploadMethod === 'file'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:border-primary/50'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border hover:border-primary/50'
                 }`}
             >
               <Upload className="w-5 h-5" />
@@ -346,6 +387,65 @@ export function FaceRegisterPage() {
             </>
           )}
         </button>
+      </div>
+
+      {/* Registered Users List */}
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6 text-primary" />
+            <h3 className="text-xl">Khuôn mặt đã đăng ký ({registeredUsers.length})</h3>
+          </div>
+          <button
+            onClick={fetchRegisteredUsers}
+            disabled={isLoadingUsers}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-5 h-5 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        {isLoadingUsers ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : registeredUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <User className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Chưa có khuôn mặt nào được đăng ký</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {registeredUsers.map((user) => (
+              <div
+                key={user.id}
+                className="bg-muted/50 border border-border rounded-lg p-4 flex items-center gap-4"
+              >
+                <div className="w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="w-7 h-7 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{user.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(user.created_at).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDeleteUser(user.id, user.name)}
+                  disabled={deletingUserId === user.id}
+                  className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+                  title="Xóa khuôn mặt"
+                >
+                  {deletingUserId === user.id ? (
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

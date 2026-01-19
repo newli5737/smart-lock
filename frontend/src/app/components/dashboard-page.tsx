@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { DoorOpen, DoorClosed, Smile, CreditCard, KeyRound, Camera, Lock, Unlock } from 'lucide-react';
+import { DoorOpen, DoorClosed, Smile, Fingerprint as FingerprintIcon, KeyRound, Camera, Lock, Unlock } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { useLockStore } from '@/store/lockStore';
 
@@ -11,23 +12,23 @@ export function DashboardPage() {
     fetchStats(7);
   }, [fetchState, fetchStats]);
 
-  const getMethodIcon = (method: 'face' | 'rfid' | 'keypad') => {
+  const getMethodIcon = (method: 'face' | 'fingerprint' | 'keypad') => {
     switch (method) {
       case 'face':
         return <Smile className="w-5 h-5" />;
-      case 'rfid':
-        return <CreditCard className="w-5 h-5" />;
+      case 'fingerprint':
+        return <FingerprintIcon className="w-5 h-5" />;
       case 'keypad':
         return <KeyRound className="w-5 h-5" />;
     }
   };
 
-  const getMethodLabel = (method: 'face' | 'rfid' | 'keypad') => {
+  const getMethodLabel = (method: 'face' | 'fingerprint' | 'keypad') => {
     switch (method) {
       case 'face':
         return 'Khuôn mặt';
-      case 'rfid':
-        return 'RFID';
+      case 'fingerprint':
+        return 'Vân tay';
       case 'keypad':
         return 'Keypad';
     }
@@ -133,9 +134,9 @@ export function DashboardPage() {
                 <span className="text-xs font-bold">{stats?.by_method.face || 0}</span>
               </div>
               <div className="flex flex-col items-center gap-2 p-3 bg-card rounded-lg">
-                <CreditCard className="w-6 h-6 text-secondary" />
-                <span className="text-xs">RFID</span>
-                <span className="text-xs font-bold">{stats?.by_method.rfid || 0}</span>
+                <FingerprintIcon className="w-6 h-6 text-secondary" />
+                <span className="text-xs">Vân tay</span>
+                <span className="text-xs font-bold">{stats?.by_method.fingerprint || 0}</span>
               </div>
               <div className="flex flex-col items-center gap-2 p-3 bg-card rounded-lg">
                 <KeyRound className="w-6 h-6 text-accent" />

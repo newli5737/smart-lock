@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Fingerprint as FingerprintIcon, Plus, Trash2, Check, X, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { fingerprintService } from '@/api';
-import { websocketService } from '@/services/websocket';
+import { useSocket } from '@/context/socket-context';
 import type { Fingerprint } from '@/types/index';
 
 export function FingerprintEntryPage() {
@@ -16,11 +16,13 @@ export function FingerprintEntryPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [enrollmentStatus, setEnrollmentStatus] = useState<string>('');
 
+    const { subscribe } = useSocket();
+
     useEffect(() => {
         fetchFingerprints();
 
         // Subscribe to WebSocket messages
-        const unsubscribe = websocketService.onMessage((message: any) => {
+        const unsubscribe = subscribe((message: any) => {
             if (message.type === 'enrollment_success') {
                 toast.success(message.message);
                 setEnrollmentStatus('');

@@ -24,7 +24,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'face-entry', label: 'Ra/Vào khuôn mặt', icon: Smile },
-    { id: 'rfid-entry', label: 'Ra/Vào Vân tay', icon: Fingerprint },
+    { id: 'fingerprint-entry', label: 'Ra/Vào Vân tay', icon: Fingerprint },
     { id: 'face-register', label: 'Đăng ký khuôn mặt', icon: Smile },
     { id: 'keypad', label: 'Mật khẩu Keypad', icon: KeyRound },
     { id: 'history', label: 'Lịch sử ra vào', icon: History },

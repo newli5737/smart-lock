@@ -11,6 +11,8 @@ import { KeypadPage } from '@/app/components/keypad-page';
 import { HistoryPage } from '@/app/components/history-page';
 import { SettingsPage } from '@/app/components/settings-page';
 
+import { SocketProvider } from '@/context/socket-context';
+
 function AppContent() {
   const { isAuthenticated } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -28,7 +30,7 @@ function AppContent() {
         return <FaceEntryPage />;
       case 'face-register':
         return <FaceRegisterPage />;
-      case 'rfid-entry':
+      case 'fingerprint-entry':
         return <FingerprintEntryPage />;
       case 'keypad':
         return <KeypadPage />;
@@ -55,8 +57,10 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
-      <Toaster position="top-right" richColors />
+      <SocketProvider>
+        <AppContent />
+        <Toaster position="top-right" richColors />
+      </SocketProvider>
     </AuthProvider>
   );
 }

@@ -10,6 +10,8 @@ from schemas.fingerprint import (
 )
 from services.state_manager import state_manager
 from services.uart import uart_service
+from models import AccessLog, AccessMethod, AccessType
+import services.message_handler as mh
 import asyncio
 
 router = APIRouter(prefix="/api/fingerprint", tags=["Fingerprint"])
@@ -86,7 +88,6 @@ async def verify_fingerprint(
     ).first()
     
     if fingerprint:
-        from models import AccessLog, AccessMethod, AccessType
         log = AccessLog(
             user_name=fingerprint.user_name,
             access_method=AccessMethod.FINGERPRINT,
@@ -106,7 +107,6 @@ async def verify_fingerprint(
             user_name=fingerprint.user_name
         )
     else:
-        from models import AccessLog, AccessMethod, AccessType
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FINGERPRINT,
@@ -142,10 +142,8 @@ async def get_fingerprints(db: Session = Depends(get_db)):
 
 @router.get("/sensor-prints")
 async def get_sensor_fingerprints():
-    from services.message_handler import sensor_fingerprints, sensor_listing_complete
     import time
     
-    import services.message_handler as mh
     mh.sensor_fingerprints = []
     mh.sensor_listing_complete = False
     

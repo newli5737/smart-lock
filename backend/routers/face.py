@@ -35,46 +35,46 @@ async def register_face(
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+    # Tự động chuyển sang chế độ đăng ký
+    state_manager.set_registration_mode()
     
-    if not state_manager.is_registration_mode():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ có thể đăng ký khuôn mặt trong chế độ Registration"
+    try:
+        image_bytes = await image.read()
+        
+        image.file.seek(0)  
+        image_path = save_uploaded_image(image, name)
+
+        
+        embedding = uniface_service.extract_embedding(image_bytes)
+        
+        if embedding is None:
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Không phát hiện khuôn mặt trong ảnh"
+            )
+        
+        user = User(
+            name=name,
+            face_embedding=embedding.tobytes()
         )
-    
-    image_bytes = await image.read()
-    
-    image.file.seek(0)  
-    image_path = save_uploaded_image(image, name)
-    print(f"Saved image to: {image_path}")
-    
-    embedding = uniface_service.extract_embedding(image_bytes)
-    
-    if embedding is None:
-        if os.path.exists(image_path):
-            os.remove(image_path)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Không phát hiện khuôn mặt trong ảnh"
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        uart_service.set_led("green")
+        uart_service.beep(2)
+        
+        return UserResponse(
+            id=user.id,
+            name=user.name,
+            created_at=user.created_at,
+            has_face=True
         )
-    
-    user = User(
-        name=name,
-        face_embedding=embedding.tobytes()
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    uart_service.set_led("green")
-    uart_service.beep(2)
-    
-    return UserResponse(
-        id=user.id,
-        name=user.name,
-        created_at=user.created_at,
-        has_face=True
-    )
+    finally:
+        # Chuyển về chế độ Entry/Exit sau khi đăng ký
+        state_manager.set_entry_exit_mode()
 
 @router.post("/verify", response_model=FaceVerifyResponse)
 async def verify_face(

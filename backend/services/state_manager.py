@@ -10,7 +10,9 @@ class DoorStatus(str, Enum):
     LOCKED = "locked"
     UNLOCKED = "unlocked"
 
-class StateManager:
+from services.singleton import SingletonMeta
+
+class StateManager(metaclass=SingletonMeta):
     def __init__(self):
         self._lock = threading.Lock()
         self._mode: LockMode = LockMode.ENTRY_EXIT
@@ -35,7 +37,7 @@ class StateManager:
             old_mode = self._mode
             self._mode = mode
             
-            print(f"Mode changed: {old_mode} → {mode}")
+            # Message removed
             self._notify_callbacks()
             return True
     
@@ -45,7 +47,7 @@ class StateManager:
             self._door_status = status
             
             if old_status != status:
-                print(f"Door status changed: {old_status} → {status}")
+                # Message removed
                 self._notify_callbacks()
     
     def is_entry_exit_mode(self) -> bool:
@@ -53,6 +55,15 @@ class StateManager:
     
     def is_registration_mode(self) -> bool:
         return self.mode == LockMode.REGISTRATION
+    
+    def get_current_mode(self) -> LockMode:
+        return self.mode
+    
+    def set_registration_mode(self):
+        self.set_mode(LockMode.REGISTRATION)
+    
+    def set_entry_exit_mode(self):
+        self.set_mode(LockMode.ENTRY_EXIT)
     
     def register_callback(self, callback: Callable):
         with self._lock:
@@ -62,8 +73,8 @@ class StateManager:
         for callback in self._callbacks:
             try:
                 callback(self._mode, self._door_status)
-            except Exception as e:
-                print(f"Error in state change callback: {e}")
+            except Exception:
+                pass
     
     def get_state(self) -> dict:
         with self._lock:

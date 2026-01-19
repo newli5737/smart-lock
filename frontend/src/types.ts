@@ -16,7 +16,7 @@ export interface AccessLog {
     id: number;
     user_id?: number | null;
     user_name?: string | null;
-    access_method: 'face' | 'rfid' | 'keypad';
+    access_method: 'face' | 'fingerprint' | 'keypad';
     access_type: 'entry' | 'exit';
     timestamp: string;
     success: boolean;
@@ -29,7 +29,7 @@ export interface AccessStats {
     failed_accesses: number;
     by_method: {
         face: number;
-        rfid: number;
+        fingerprint: number;
         keypad: number;
     };
     recent_logs: AccessLog[];
@@ -43,10 +43,11 @@ export interface User {
     is_active: boolean;
 }
 
-export interface RFIDCard {
+export interface Fingerprint {
     id: number;
-    card_uid: string;
+    fingerprint_id: number;
     user_name: string;
+    finger_position: number;
     is_active: boolean;
     created_at: string;
 }
@@ -58,12 +59,6 @@ export interface FaceVerifyResponse {
     similarity?: number;
 }
 
-export interface RFIDVerifyResponse {
-    success: boolean;
-    message: string;
-    card_uid?: string;
-    user_name?: string;
-}
 
 export interface KeypadVerifyResponse {
     success: boolean;

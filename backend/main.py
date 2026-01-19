@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Smart Lock API",
-    description="IoT Smart Lock với Face Recognition, RFID, và Keypad",
+    description="IoT Smart Lock với Face Recognition và Keypad",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -53,32 +53,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        print(f"WebSocket client connected. Total: {len(self.active_connections)}")
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-        print(f"WebSocket client disconnected. Total: {len(self.active_connections)}")
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections[:]:  
-            try:
-                await connection.send_json(message)
-            except Exception as e:
-                print(f"Error broadcasting to client: {e}")
-                try:
-                    self.disconnect(connection)
-                except:
-                    pass
-
-manager = ConnectionManager()
 
 app.include_router(state.router)
 app.include_router(face.router)

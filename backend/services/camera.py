@@ -2,7 +2,9 @@ import cv2
 import time
 from typing import Generator
 
-class CameraService:
+from services.singleton import SingletonMeta
+
+class CameraService(metaclass=SingletonMeta):
     def __init__(self):
         self.camera = None
 
