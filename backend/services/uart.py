@@ -77,6 +77,31 @@ class UARTService(metaclass=SingletonMeta):
     def send_message(self, message: dict) -> bool:
         if not self.serial_conn or not self.serial_conn.is_open:
             print("Serial connection not open")
+            
+            # Broadcast error to frontend
+            try:
+                from services.websocket import websocket_manager
+                import asyncio
+                
+                payload = {
+                    "type": "system_error",
+                    "message": "Không kết nối được với mạch (Serial connection not open)"
+                }
+                
+                loop = None
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                
+                if loop.is_running():
+                    loop.create_task(websocket_manager.broadcast(payload))
+                else:
+                    loop.run_until_complete(websocket_manager.broadcast(payload))
+            except Exception as e:
+                print(f"Failed to broadcast error: {e}")
+                
             return False
         
         try:
@@ -88,8 +113,11 @@ class UARTService(metaclass=SingletonMeta):
             print(f"Error sending message: {e}")
             return False
     
-    def unlock_door(self, duration: int = 5):
-        return self.send_message({"cmd": "unlock", "duration": duration})
+    def send_command(self, message: dict) -> bool:
+        return self.send_message(message)
+
+    def unlock_door(self):
+        return self.send_message({"cmd": "unlock"})
     
     def lock_door(self):
         return self.send_message({"cmd": "lock"})

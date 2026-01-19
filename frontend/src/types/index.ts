@@ -17,7 +17,6 @@ export interface Fingerprint {
   fingerprint_id: number;
   user_id: number;
   user_name: string;
-  finger_position: number;
   is_active: boolean;
   created_at: string;
 }

@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { KeyRound, Eye, EyeOff, AlertTriangle, Check, RefreshCw } from 'lucide-react';
+import { KeyRound, Eye, EyeOff, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { keypadService } from '@/api';
 
@@ -185,11 +186,11 @@ export function KeypadPage() {
               <p className="text-sm font-medium mb-3">Yêu cầu mật khẩu:</p>
               {passwordRequirements.map((req, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${req.met ? 'bg-success' : 'bg-muted-foreground/20'
-                    }`}>
+                  <div className={`w - 5 h - 5 rounded - full flex items - center justify - center ${req.met ? 'bg-success' : 'bg-muted-foreground/20'
+                    } `}>
                     {req.met && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  <span className={`text-sm ${req.met ? 'text-success' : 'text-muted-foreground'}`}>
+                  <span className={`text - sm ${req.met ? 'text-success' : 'text-muted-foreground'} `}>
                     {req.label}
                   </span>
                 </div>

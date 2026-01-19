@@ -20,7 +20,7 @@ interface LockStore {
 
     // Actions
     setMode: (mode: 'entry_exit' | 'registration') => Promise<void>;
-    setDoorStatus: (status: 'locked' | 'unlocked') => void;
+    setDoorStatus: (status: 'locked' | 'unlocked') => Promise<void>;
     setConfig: (config: RuntimeConfig) => void;
     setError: (error: string | null) => void;
 
@@ -58,7 +58,20 @@ export const useLockStore = create<LockStore>((set) => ({
         }
     },
 
-    setDoorStatus: (status) => set({ doorStatus: status }),
+    setDoorStatus: async (status) => {
+        set({ isLoading: true, error: null });
+        try {
+            await stateService.setDoorStatus(status);
+            set({ doorStatus: status, isLoading: false });
+            // toast.success(`Đã gửi lệnh ${status === 'unlocked' ? 'mở' : 'đóng'} cửa`);
+        } catch (error: any) {
+            set({
+                error: error.response?.data?.detail || 'Lỗi điều khiển cửa',
+                isLoading: false
+            });
+            // Let the component handle loading state or toast if needed, but error sets here
+        }
+    },
 
     setConfig: (config) => set({ config }),
 

@@ -1,4 +1,4 @@
-import apiClient from './client';
+import { api } from './client';
 
 export interface User {
     id: number;
@@ -9,12 +9,8 @@ export interface User {
 }
 
 export const userService = {
-    getAllUsers: async (): Promise<User[]> => {
-        const response = await apiClient.get<User[]>('/api/users/all');
-        return response as unknown as User[];
-    },
-
-    deleteUser: async (id: number): Promise<void> => {
-        await apiClient.delete(`/api/users/${id}`);
-    }
+    getAllUsers: () => api.get<any, User[]>('/api/users/all'),
+    createUser: (name: string) => api.post<any, User>('/api/users/', { name }),
+    updateUser: (id: number, name: string) => api.put<any, User>(`/api/users/${id}`, { name }),
+    deleteUser: (id: number) => api.delete<any, any>(`/api/users/${id}`)
 };

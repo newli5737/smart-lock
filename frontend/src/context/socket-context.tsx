@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 type WebSocketMessage = {
     type: string;
@@ -66,6 +67,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
             socket.onmessage = (event) => {
                 try {
                     const message = JSON.parse(event.data);
+
+                    if (message.type === 'system_error') {
+                        toast.error(message.message || 'Lỗi hệ thống');
+                    }
+
                     handlersRef.current.forEach(handler => handler(message));
                 } catch (e) {
                     // parse error

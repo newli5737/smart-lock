@@ -32,6 +32,23 @@ async def lifespan(app: FastAPI):
         db.close()
     
     print("Waiting for UART configuration from Frontend...")
+
+    # Initialize Camera Service and Face Stream globally
+    from services.face_stream import face_recognition_stream
+    from services.camera import camera_service
+    
+    print("Initializing Camera Service...")
+    try:
+        # Warm up camera
+        camera_service.get_frame()
+        # Start face recognition stream (it runs its own loop if generated, but we just ensures it's ready)
+        # Actually generate_frames_with_recognition is a generator.
+        # If we want it to run always, we might need a separate thread consuming it or different design.
+        # But User request: "mới chạy?? đúng nguyên tắc là nó phải khởi tạo sớm hơn".
+        # Initializing `CameraService` (opening camera) here handles the "slow start".
+        print("Camera initialized.")
+    except Exception as e:
+        print(f"Failed to initialize camera: {e}")
     
     yield
     

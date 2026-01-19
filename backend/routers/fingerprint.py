@@ -1,61 +1,70 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Fingerprint, User
-from schemas.fingerprint import (
-    FingerprintEnrollRequest,
-    FingerprintResponse,
-    FingerprintVerifyRequest,
-    FingerprintVerifyResponse
-)
+from models import Fingerprint, User, AccessLog, AccessMethod, AccessType
+from pydantic import BaseModel
 from services.state_manager import state_manager
 from services.uart import uart_service
-from models import AccessLog, AccessMethod, AccessType
 import services.message_handler as mh
 import asyncio
 
 router = APIRouter(prefix="/api/fingerprint", tags=["Fingerprint"])
+
+class FingerprintEnrollRequest(BaseModel):
+    user_id: int
+
+class FingerprintResponse(BaseModel):
+    id: int
+    fingerprint_id: int
+    user_id: int
+    user_name: str
+    is_active: bool
+    created_at: object
+
+class FingerprintVerifyRequest(BaseModel):
+    fingerprint_id: int
+
+class FingerprintVerifyResponse(BaseModel):
+    success: bool
+    message: str
+    user_name: str = None
 
 @router.post("/enroll", response_model=FingerprintResponse)
 async def enroll_fingerprint(
     fingerprint_data: FingerprintEnrollRequest,
     db: Session = Depends(get_db)
 ):
+    user = db.query(User).filter(User.id == fingerprint_data.user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Người dùng không tồn tại"
+        )
 
-    existing_print = db.query(Fingerprint).filter(Fingerprint.fingerprint_id == fingerprint_data.fingerprint_id).first()
-    if existing_print:
+    # Auto-assign ID
+    used_ids = [fp.fingerprint_id for fp in db.query(Fingerprint).all()]
+    new_id = 1
+    while new_id in used_ids:
+        new_id += 1
+    
+    if new_id > 127:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Fingerprint ID {fingerprint_data.fingerprint_id} đã tồn tại"
+            detail="Bộ nhớ vân tay đã đầy (Max 127)"
         )
-    
-    user = db.query(User).filter(User.name == fingerprint_data.user_name).first()
-    if not user:
-        max_user = db.query(User).order_by(User.id.desc()).first()
-        new_user_id = (max_user.id + 1) if max_user else 1
-        
-        user = User(
-            id=new_user_id,
-            name=fingerprint_data.user_name
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
     
     fingerprint = Fingerprint(
-        fingerprint_id=fingerprint_data.fingerprint_id,
+        fingerprint_id=new_id,
         user_id=user.id,
-        # user_name removed
-        finger_position=fingerprint_data.finger_position,
         is_active=False  
     )
     db.add(fingerprint)
     db.commit()
     db.refresh(fingerprint)
     
-    uart_service.send_message({
+    uart_service.send_command({
         "cmd": "enroll_fingerprint",
-        "id": fingerprint_data.fingerprint_id
+        "id": new_id
     })
     
     uart_service.beep(2)
@@ -64,8 +73,7 @@ async def enroll_fingerprint(
         id=fingerprint.id,
         fingerprint_id=fingerprint.fingerprint_id,
         user_id=fingerprint.user_id,
-        user_name=user.name, # Use mapped user object
-        finger_position=fingerprint.finger_position,
+        user_name=user.name,
         is_active=fingerprint.is_active,
         created_at=fingerprint.created_at
     )
@@ -89,7 +97,7 @@ async def verify_fingerprint(
     
     if fingerprint:
         log = AccessLog(
-            user_name=fingerprint.user.name, # Use relationship
+            user_name=fingerprint.user.name, 
             access_method=AccessMethod.FINGERPRINT,
             access_type=AccessType.ENTRY,
             success=True,
@@ -127,15 +135,12 @@ async def verify_fingerprint(
 @router.get("/prints")
 async def get_fingerprints(db: Session = Depends(get_db)):
     fingerprints = db.query(Fingerprint).all()
-    # Ensure lazy load works or do joinedload if performance needed. 
-    # For small app, simple access is fine.
     return [
         FingerprintResponse(
             id=fp.id,
             fingerprint_id=fp.fingerprint_id,
             user_id=fp.user_id,
-            user_name=fp.user.name, # Access relationship
-            finger_position=fp.finger_position,
+            user_name=fp.user.name, 
             is_active=fp.is_active,
             created_at=fp.created_at
         )
@@ -143,48 +148,40 @@ async def get_fingerprints(db: Session = Depends(get_db)):
     ]
 
 @router.get("/sensor-prints")
-async def get_sensor_fingerprints():
-    import time
-    
-    mh.sensor_fingerprints = []
+async def get_sensor_prints():
+    # Send command to list fingerprints
     mh.sensor_listing_complete = False
+    mh.sensor_fingerprints = []
     
-    uart_service.send_message({
+    success = uart_service.send_command({
         "cmd": "list_fingerprints"
     })
     
-    timeout = 15
-    start_time = time.time()
+    if not success:
+         raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Không thể gửi lệnh đến cảm biến (Mất kết nối UART)"
+        )
     
-    while not mh.sensor_listing_complete and (time.time() - start_time) < timeout:
+    # Wait for results (max 3 seconds)
+    for _ in range(30):
+        if mh.sensor_listing_complete:
+            break
         await asyncio.sleep(0.1)
-    
-    if mh.sensor_listing_complete:
-        if len(mh.sensor_fingerprints) == 0:
-            message = "Không có vân tay nào trong AS608 sensor"
-        else:
-            message = f"Tìm thấy {len(mh.sensor_fingerprints)} vân tay trong AS608 sensor"
         
-        return {
-            "success": True,
-            "fingerprints": mh.sensor_fingerprints,
-            "count": len(mh.sensor_fingerprints),
-            "message": message
-        }
-    else:
-        return {
-            "success": False,
-            "fingerprints": mh.sensor_fingerprints,
-            "count": len(mh.sensor_fingerprints),
-            "message": "Timeout - Chỉ nhận được một phần kết quả"
-        }
+    return {
+        "success": True,
+        "message": "Lấy danh sách từ cảm biến thành công",
+        "fingerprints": mh.sensor_fingerprints,
+        "count": len(mh.sensor_fingerprints)
+    }
 
 @router.delete("/clear-all")
 async def clear_all_fingerprints(db: Session = Depends(get_db)):
     deleted_count = db.query(Fingerprint).delete()
     db.commit()
     
-    uart_service.send_message({
+    uart_service.send_command({
         "cmd": "clear_all_fingerprints"
     })
     
@@ -207,9 +204,39 @@ async def delete_fingerprint(fingerprint_id: int, db: Session = Depends(get_db))
     db.delete(fingerprint)
     db.commit()
     
-    uart_service.send_message({
+    uart_service.send_command({
         "cmd": "delete_fingerprint",
         "id": sensor_id
     })
     
     return {"success": True, "message": f"Đã xóa vân tay ID {sensor_id}"}
+
+
+@router.post("/retry/{fingerprint_id}")
+async def retry_enroll_fingerprint(
+    fingerprint_id: int,
+    db: Session = Depends(get_db)
+):
+    fingerprint = db.query(Fingerprint).filter(Fingerprint.fingerprint_id == fingerprint_id).first()
+    if not fingerprint:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vân tay không tồn tại"
+        )
+    
+    if fingerprint.is_active:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vân tay đã Active, không cần đăng ký lại"
+        )
+
+    # Resend command
+    uart_service.send_command({
+        "cmd": "enroll_fingerprint",
+        "id": fingerprint.fingerprint_id
+    })
+    
+    uart_service.beep(2)
+    
+    return {"success": True, "message": f"Đã gửi lại lệnh đăng ký cho ID {fingerprint.fingerprint_id}"}
+

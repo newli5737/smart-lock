@@ -5,7 +5,6 @@ from typing import Optional
 class FingerprintBase(BaseModel):
     fingerprint_id: int  # ID in AS608 sensor (1-127)
     user_name: str
-    finger_position: int  # 1-10
 
 class FingerprintEnrollRequest(FingerprintBase):
     pass

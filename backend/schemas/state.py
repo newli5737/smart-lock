@@ -12,3 +12,11 @@ class SetModeResponse(BaseModel):
     success: bool
     mode: str
     message: str
+
+class SetDoorStatusRequest(BaseModel):
+    status: DoorStatus
+
+class SetDoorStatusResponse(BaseModel):
+    success: bool
+    status: str
+    message: str

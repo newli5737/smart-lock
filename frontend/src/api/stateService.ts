@@ -16,4 +16,9 @@ export const stateService = {
     async getStatus(): Promise<any> {
         return await apiClient.get('/api/state/status');
     },
+
+    // Control door
+    async setDoorStatus(status: 'locked' | 'unlocked'): Promise<void> {
+        await apiClient.post('/api/state/door', { status });
+    },
 };

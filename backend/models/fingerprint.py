@@ -9,8 +9,6 @@ class Fingerprint(Base):
     id = Column(Integer, primary_key=True, index=True)
     fingerprint_id = Column(Integer, unique=True, nullable=False, index=True)  
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    # user_name column removed
-    finger_position = Column(Integer, nullable=False)  
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=vietnam_now)
     updated_at = Column(DateTime(timezone=True), onupdate=vietnam_now)

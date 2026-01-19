@@ -108,7 +108,11 @@ export function DashboardPage() {
             <button
               disabled={isLoading || doorStatus === 'unlocked'}
               className="w-full flex items-center justify-center gap-3 bg-success hover:bg-success/90 text-success-foreground py-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => toast.info('Chức năng điều khiển cửa cần kết nối ESP32')}
+              onClick={() => {
+                useLockStore.getState().setDoorStatus('unlocked')
+                  .then(() => toast.success('Đã gửi lệnh mở cửa'))
+                  .catch(() => toast.error('Lỗi mở cửa'));
+              }}
             >
               <Unlock className="w-5 h-5" />
               <span>{isLoading ? 'Đang xử lý...' : 'Mở cửa'}</span>
@@ -117,7 +121,11 @@ export function DashboardPage() {
             <button
               disabled={isLoading || doorStatus === 'locked'}
               className="w-full flex items-center justify-center gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground py-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => toast.info('Chức năng điều khiển cửa cần kết nối ESP32')}
+              onClick={() => {
+                useLockStore.getState().setDoorStatus('locked')
+                  .then(() => toast.success('Đã gửi lệnh đóng cửa'))
+                  .catch(() => toast.error('Lỗi đóng cửa'));
+              }}
             >
               <Lock className="w-5 h-5" />
               <span>{isLoading ? 'Đang xử lý...' : 'Đóng cửa'}</span>
@@ -186,14 +194,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
-              Chụp ảnh
-            </button>
-            <button className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
-              Xem lại
-            </button>
-          </div>
+
         </div>
       </div>
     </div>

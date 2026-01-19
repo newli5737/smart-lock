@@ -31,7 +31,7 @@ def save_uploaded_image(image: UploadFile, user_name: str) -> str:
 
 @router.post("/register", response_model=UserResponse)
 async def register_face(
-    name: str = Form(...),
+    user_id: int = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -39,10 +39,29 @@ async def register_face(
     state_manager.set_registration_mode()
     
     try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+             raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Người dùng không tồn tại"
+            )
+
+        # Check existing face (One Face Per User)
+        existing_face = db.query(Face).filter(Face.user_id == user.id).first()
+        if existing_face:
+            # Delete old image/record to allow overwrite
+            if existing_face.image_path and os.path.exists(existing_face.image_path):
+                try:
+                    os.remove(existing_face.image_path)
+                except:
+                    pass
+            db.delete(existing_face)
+            db.commit()
+
         image_bytes = await image.read()
         
         image.file.seek(0)  
-        image_path = save_uploaded_image(image, name)
+        image_path = save_uploaded_image(image, user.name)
 
         
         embedding = uniface_service.extract_embedding(image_bytes)
@@ -55,14 +74,6 @@ async def register_face(
                 detail="Không phát hiện khuôn mặt trong ảnh"
             )
         
-        # Check if user exists
-        user = db.query(User).filter(User.name == name).first()
-        if not user:
-            user = User(name=name)
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            
         # Add face to user
         face = Face(
             user_id=user.id,
@@ -71,7 +82,7 @@ async def register_face(
         )
         db.add(face)
         db.commit()
-        db.refresh(user) # Refresh user to get associated faces
+        db.refresh(user) 
         
         uart_service.set_led("green")
         uart_service.beep(2)
@@ -83,7 +94,6 @@ async def register_face(
             has_face=True
         )
     finally:
-        # Chuyển về chế độ Entry/Exit sau khi đăng ký
         state_manager.set_entry_exit_mode()
 
 @router.post("/verify", response_model=FaceVerifyResponse)
@@ -213,7 +223,7 @@ async def get_users(db: Session = Depends(get_db)):
             id=user.id,
             name=user.name,
             created_at=user.created_at,
-            has_face=True # Simplification since we filtered
+            has_face=True 
         )
         for user in users
     ]
@@ -343,6 +353,15 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    # This logic seems redundant if user.py handles user deletion.
+    # But this is inside face.py, maybe it was legacy logic.
+    # We should deprecate this or keep it.
+    # The user asked for "users-page" CRUD.
+    # I'll keep it but it might be duplicate of /api/users/{id}.
+    # Router prefix is /api/face. So this is /api/face/{user_id}.
+    # It deletes the User? The code says `db.query(User)...`.
+    # I'll leave it as is to avoid breaking existing frontend if it calls this.
+    
     user = db.query(User).filter(User.id == user_id).first()
     
     if not user:

@@ -1,34 +1,32 @@
-import apiClient from './client';
+import { api } from './client';
 import type { Fingerprint, FingerprintVerifyResponse } from '../types/index';
 
 export const fingerprintService = {
     // Enroll new fingerprint
-    async enroll(fingerprintId: number, userName: string, fingerPosition: number): Promise<Fingerprint> {
-        const response = await apiClient.post<Fingerprint>('/api/fingerprint/enroll', {
-            fingerprint_id: fingerprintId,
-            user_name: userName,
-            finger_position: fingerPosition
+    async enroll(userId: number): Promise<Fingerprint> {
+        const response = await api.post<any, Fingerprint>('/api/fingerprint/enroll', {
+            user_id: userId
         });
-        return response as unknown as Fingerprint;
+        return response;
     },
 
-    // Verify fingerprint
+    // Verify fingerprint (Still accessed manually via API if needed, usually UART handles this)
     async verify(fingerprintId: number): Promise<FingerprintVerifyResponse> {
-        const response = await apiClient.post<FingerprintVerifyResponse>('/api/fingerprint/verify', {
+        const response = await api.post<any, FingerprintVerifyResponse>('/api/fingerprint/verify', {
             fingerprint_id: fingerprintId
         });
-        return response as unknown as FingerprintVerifyResponse;
+        return response;
     },
 
     // Get all fingerprints
     async getPrints(): Promise<Fingerprint[]> {
-        const response = await apiClient.get<Fingerprint[]>('/api/fingerprint/prints');
-        return response as unknown as Fingerprint[];
+        const response = await api.get<any, Fingerprint[]>('/api/fingerprint/prints');
+        return response;
     },
 
     // Delete fingerprint
     async deletePrint(id: number): Promise<void> {
-        await apiClient.delete(`/api/fingerprint/${id}`);
+        await api.delete(`/api/fingerprint/${id}`);
     },
 
     // Get fingerprint list from AS608 sensor
@@ -38,13 +36,19 @@ export const fingerprintService = {
         fingerprints?: number[];
         count?: number
     }> {
-        const response = await apiClient.get('/api/fingerprint/sensor-prints');
-        return response as unknown as { success: boolean; message: string; fingerprints?: number[]; count?: number };
+        const response = await api.get<any, any>('/api/fingerprint/sensor-prints');
+        return response;
     },
 
     // Clear all fingerprints from database and sensor
     async clearAll(): Promise<{ success: boolean; message: string }> {
-        const response = await apiClient.delete('/api/fingerprint/clear-all');
-        return response as unknown as { success: boolean; message: string };
+        const response = await api.delete<any, any>('/api/fingerprint/clear-all');
+        return response;
+    },
+
+    // Retry enrollment for inactive fingerprint
+    async retryEnroll(fingerprintId: number): Promise<{ success: boolean; message: string }> {
+        const response = await api.post<any, any>(`/api/fingerprint/retry/${fingerprintId}`);
+        return response;
     },
 };
