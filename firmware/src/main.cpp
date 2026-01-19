@@ -38,11 +38,11 @@ void setup() {
                           1 
   );
 
-  xTaskCreatePinnedToCore(vControlTask, "ControlTask", 2048, NULL, 2, NULL,
+  xTaskCreatePinnedToCore(vControlTask, "ControlTask", 4096, NULL, 2, NULL,
                           1 
   );
 
-  xTaskCreatePinnedToCore(vDisplayTask, "DisplayTask", 2048, NULL, 1, NULL,
+  xTaskCreatePinnedToCore(vDisplayTask, "DisplayTask", 4096, NULL, 1, NULL,
                           0 
   );
 

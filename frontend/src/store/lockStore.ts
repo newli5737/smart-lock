@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { RuntimeConfig, AccessStats } from '../types';
-import { stateService, logsService, configService, updateAPIBaseURL } from '../api';
+import { stateService, logsService, configService } from '../api';
 
 interface LockStore {
     // System state
@@ -8,7 +8,6 @@ interface LockStore {
     doorStatus: 'locked' | 'unlocked';
 
     // API Configuration
-    apiBaseURL: string;
     config: RuntimeConfig | null;
 
     // Statistics
@@ -21,7 +20,6 @@ interface LockStore {
     // Actions
     setMode: (mode: 'entry_exit' | 'registration') => Promise<void>;
     setDoorStatus: (status: 'locked' | 'unlocked') => void;
-    setAPIBaseURL: (url: string) => void;
     setConfig: (config: RuntimeConfig) => void;
     setError: (error: string | null) => void;
 
@@ -38,7 +36,6 @@ export const useLockStore = create<LockStore>((set) => ({
     // Initial state
     mode: 'entry_exit',
     doorStatus: 'locked',
-    apiBaseURL: localStorage.getItem('api_base_url') || 'http://localhost:8000',
     config: null,
     stats: null,
     isLoading: false,
@@ -60,12 +57,6 @@ export const useLockStore = create<LockStore>((set) => ({
     },
 
     setDoorStatus: (status) => set({ doorStatus: status }),
-
-    setAPIBaseURL: (url) => {
-        localStorage.setItem('api_base_url', url);
-        updateAPIBaseURL(url);
-        set({ apiBaseURL: url });
-    },
 
     setConfig: (config) => set({ config }),
 
@@ -105,11 +96,17 @@ export const useLockStore = create<LockStore>((set) => ({
     },
 
     updateConfig: async (newConfig) => {
+        console.log('🏪 Store updateConfig called with:', newConfig);
         set({ isLoading: true, error: null });
+        console.log('🏪 isLoading set to true');
         try {
+            console.log('🏪 Calling configService.updateConfig...');
             const result = await configService.updateConfig(newConfig);
+            console.log('🏪 configService.updateConfig result:', result);
             set({ config: result.config, isLoading: false });
+            console.log('🏪 Store updated, isLoading set to false');
         } catch (error: any) {
+            console.error('🏪 Store updateConfig error:', error);
             set({
                 error: error.response?.data?.detail || 'Không thể cập nhật cấu hình',
                 isLoading: false

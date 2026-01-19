@@ -10,16 +10,18 @@
 // Buzzer 
 #define PIN_BUZZER 15
 
+// LED Status Indicator
+#define PIN_LED 2   // Status LED (blink pattern: fast=error, slow=success, solid=ready)
+
 // I2C (LCD1602)
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
-// UART (AS608 Fingerprint Sensor)
+// UART AS608 
 #define PIN_FINGERPRINT_TX 16  // TX to sensor RX
 #define PIN_FINGERPRINT_RX 17  // RX to sensor TX
 
 // Keypad 4x4
-// R1, R2, R3, R4, C1, C2, C3, C4
 const byte KEYPAD_ROWS = 4;
 const byte KEYPAD_COLS = 4;
 const byte PIN_ROW1 = 13;

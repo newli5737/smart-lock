@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Fingerprint as FingerprintIcon, Plus, Trash2, Check, X, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { fingerprintService } from '@/api';
+import { websocketService } from '@/services/websocket';
 import type { Fingerprint } from '@/types/index';
 
 export function FingerprintEntryPage() {
@@ -13,9 +14,38 @@ export function FingerprintEntryPage() {
     const [newFingerPosition, setNewFingerPosition] = useState('1');
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [enrollmentStatus, setEnrollmentStatus] = useState<string>('');
 
     useEffect(() => {
         fetchFingerprints();
+
+        // Subscribe to WebSocket messages
+        const unsubscribe = websocketService.onMessage((message: any) => {
+            if (message.type === 'enrollment_success') {
+                toast.success(message.message);
+                setEnrollmentStatus('');
+                setScanStatus('success'); // Show success UI
+                fetchFingerprints(); // Refresh list
+            } else if (message.type === 'enrollment_failed') {
+                toast.error(message.message);
+                setEnrollmentStatus('');
+                setScanStatus('denied'); // Show error UI
+            } else if (message.type === 'enrollment_status') {
+                // Update enrollment status display
+                setEnrollmentStatus(message.message);
+                setScanStatus('waiting');
+            } else if (message.type === 'scan_success') {
+                toast.success(message.message);
+                setScanStatus('success');
+            } else if (message.type === 'scan_failed') {
+                toast.error(message.message);
+                setScanStatus('denied');
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     const fetchFingerprints = async () => {
@@ -77,6 +107,35 @@ export function FingerprintEntryPage() {
         }
     };
 
+    const handleGetSensorList = async () => {
+        try {
+            const result = await fingerprintService.getSensorPrints();
+
+            if (result.success && result.fingerprints) {
+                const fpList = result.fingerprints.map((id: number) => `ID: ${id}`).join(', ');
+                alert(`Danh sách vân tay trong AS608 sensor:\n\nTổng số: ${result.count}\n\n${fpList || 'Không có vân tay nào'}`);
+            } else {
+                toast.info(result.message);
+            }
+        } catch (error) {
+            toast.error('Lỗi lấy danh sách vân tay từ sensor');
+        }
+    };
+
+    const handleClearAll = async () => {
+        if (!confirm('Bạn có chắc chắn muốn xóa TẤT CẢ vân tay khỏi cả database và AS608 sensor?')) {
+            return;
+        }
+
+        try {
+            const result = await fingerprintService.clearAll();
+            toast.success(result.message);
+            await fetchFingerprints();
+        } catch (error) {
+            toast.error('Lỗi xóa vân tay');
+        }
+    };
+
     const getFingerName = (position: number): string => {
         const fingers = ['Ngón cái', 'Ngón trỏ', 'Ngón giữa', 'Ngón áp út', 'Ngón út'];
         const hand = position <= 5 ? 'Tay phải' : 'Tay trái';
@@ -101,18 +160,23 @@ export function FingerprintEntryPage() {
                 <h3 className="text-xl mb-4">Trạng thái quét vân tay</h3>
 
                 <div className="flex items-center justify-center min-h-[200px]">
-                    {scanStatus === 'waiting' && (
+                    {enrollmentStatus ? (
+                        <div className="text-center">
+                            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                                <FingerprintIcon className="w-12 h-12 text-primary" />
+                            </div>
+                            <p className="text-lg text-primary mb-2">{enrollmentStatus}</p>
+                            <p className="text-sm text-muted-foreground">Vui lòng làm theo hướng dẫn</p>
+                        </div>
+                    ) : scanStatus === 'waiting' ? (
                         <div className="text-center">
                             <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                                 <FingerprintIcon className="w-12 h-12 text-muted-foreground" />
                             </div>
-                            <p className="text-xl mb-2">Sẵn sàng xác thực vân tay</p>
-                            <p className="text-sm text-muted-foreground">Đặt ngón tay lên cảm biến AS608</p>
-                            <p className="text-xs text-muted-foreground mt-2">Hệ thống sẽ tự động quét và xác thực</p>
+                            <p className="text-xl mb-2">Chạm vân tay để mở cửa</p>
+                            <p className="text-sm text-muted-foreground">Cảm biến luôn hoạt động</p>
                         </div>
-                    )}
-
-                    {scanStatus === 'success' && (
+                    ) : scanStatus === 'success' ? (
                         <div className="text-center">
                             <div className="w-24 h-24 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Check className="w-12 h-12 text-success" />
@@ -126,9 +190,7 @@ export function FingerprintEntryPage() {
                                 Đóng
                             </button>
                         </div>
-                    )}
-
-                    {scanStatus === 'denied' && (
+                    ) : scanStatus === 'denied' ? (
                         <div className="text-center">
                             <div className="w-24 h-24 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <X className="w-12 h-12 text-destructive" />
@@ -142,7 +204,7 @@ export function FingerprintEntryPage() {
                                 Đóng
                             </button>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
 
@@ -150,13 +212,29 @@ export function FingerprintEntryPage() {
             <div className="bg-card border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl">Danh sách vân tay đã đăng ký</h3>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm vân tay
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleGetSensorList}
+                            className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Lấy danh sách AS608
+                        </button>
+                        <button
+                            onClick={handleClearAll}
+                            className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Xóa tất cả
+                        </button>
+                        <button
+                            onClick={() => setShowAddModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Thêm vân tay
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search */}

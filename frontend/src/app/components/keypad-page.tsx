@@ -67,7 +67,7 @@ export function KeypadPage() {
       }
 
       // Set new password
-      await keypadService.setPassword(newPassword);
+      await keypadService.setPassword(newPassword, hasExistingPassword ? currentPassword : undefined);
       toast.success('Cập nhật mật khẩu keypad thành công');
 
       setCurrentPassword('');

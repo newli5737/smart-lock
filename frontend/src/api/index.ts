@@ -5,4 +5,3 @@ export { fingerprintService } from './fingerprintService';
 export { keypadService } from './keypadService';
 export { logsService } from './logsService';
 export { configService } from './configService';
-export { updateAPIBaseURL, getAPIBaseURL } from './client';

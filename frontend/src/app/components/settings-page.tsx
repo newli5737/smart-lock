@@ -1,4 +1,4 @@
-import { Save, RefreshCw, Shield, Server, Database } from 'lucide-react';
+import { Save, RefreshCw, Shield, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useLockStore } from '@/store/lockStore';
@@ -28,10 +28,16 @@ export function SettingsPage() {
   }, [config]);
 
   const handleSave = async () => {
+    console.log('💾 Settings Save Button Clicked');
+    console.log('📝 Form Data:', formData);
+    console.log('🔄 isLoading before:', isLoading);
     try {
+      console.log('🔄 Calling updateConfig...');
       await updateConfig(formData);
+      console.log('✅ updateConfig completed successfully');
       toast.success('Cài đặt đã được lưu thành công');
     } catch (error) {
+      console.error('❌ updateConfig failed:', error);
       // Error handled in store
     }
   };
@@ -121,27 +127,6 @@ export function SettingsPage() {
             <p className="text-sm text-muted-foreground mt-2">
               Giá trị cao hơn yêu cầu độ chính xác cao hơn nhưng có thể từ chối người dùng hợp lệ. Khuyên dùng: 0.6 - 0.75.
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* System Info */}
-      <div className="bg-card border border-border rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-            <Database className="w-5 h-5 text-primary" />
-          </div>
-          <h3 className="text-xl">Thông tin Database</h3>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex justify-between py-3 border-b border-border">
-            <span className="text-muted-foreground">Database URL:</span>
-            <span className="font-mono text-sm max-w-[250px] truncate">{config?.database_url || 'Đang tải...'}</span>
-          </div>
-          <div className="flex justify-between py-3">
-            <span className="text-muted-foreground">Trạng thái API:</span>
-            <span className="text-success">Online</span>
           </div>
         </div>
       </div>

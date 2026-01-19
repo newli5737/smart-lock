@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from config import config_manager, RuntimeConfig
+from config import config_manager
 from services.uart import uart_service
 from services.message_handler import handle_esp32_message
+from database import DATABASE_URL
 
 router = APIRouter(prefix="/api/config", tags=["Configuration"])
 
@@ -11,10 +12,16 @@ class UpdateConfigRequest(BaseModel):
     uart_baudrate: int | None = None
     face_similarity_threshold: float | None = None
 
-@router.get("", response_model=RuntimeConfig)
+@router.get("")
 async def get_config():
     """Lấy cấu hình hiện tại"""
-    return config_manager.get_config()
+    config = config_manager.get_config()
+    return {
+        "uart_port": config.uart_port,
+        "uart_baudrate": config.uart_baudrate,
+        "face_similarity_threshold": config.face_similarity_threshold,
+        "database_url": DATABASE_URL
+    }
 
 @router.post("/update")
 async def update_config(request: UpdateConfigRequest):
@@ -37,11 +44,21 @@ async def update_config(request: UpdateConfigRequest):
             return {
                 "success": False,
                 "message": "Đã lưu cấu hình nhưng không thể kết nối UART",
-                "config": current_config
+                "config": {
+                    "uart_port": current_config.uart_port,
+                    "uart_baudrate": current_config.uart_baudrate,
+                    "face_similarity_threshold": current_config.face_similarity_threshold,
+                    "database_url": DATABASE_URL
+                }
             }
             
     return {
         "success": True,
         "message": "Đã cập nhật cấu hình và kết nối UART",
-        "config": config_manager.get_config()
+        "config": {
+            "uart_port": config_manager.get_config().uart_port,
+            "uart_baudrate": config_manager.get_config().uart_baudrate,
+            "face_similarity_threshold": config_manager.get_config().face_similarity_threshold,
+            "database_url": DATABASE_URL
+        }
     }

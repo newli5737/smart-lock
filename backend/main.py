@@ -1,30 +1,41 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import Base, engine
 from routers import state, face, fingerprint, keypad, logs, config, video
 from services.uart import uart_service
 from services.state_manager import state_manager
+from services.websocket import websocket_manager
 from models import AccessLog, AccessMethod, AccessType
 from database import SessionLocal
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle events"""
-    # Startup
-    print("🚀 Starting Smart Lock Backend...")
-    
-    # Tạo database tables
+
     Base.metadata.create_all(bind=engine)
     print("✓ Database tables created")
     
-    # Không tự động kết nối UART nữa. Chờ config từ frontend.
+    from models import KeypadPassword
+    import hashlib
+    db = SessionLocal()
+    try:
+        existing_password = db.query(KeypadPassword).first()
+        if not existing_password:
+            default_hash = hashlib.sha256("123456".encode()).hexdigest()
+            default_pwd = KeypadPassword(password_hash=default_hash)
+            db.add(default_pwd)
+            db.commit()
+            print("✓ Default password (123456) initialized")
+        else:
+            print("ℹ Password already exists")
+    finally:
+        db.close()
+    
     print("ℹ Waiting for UART configuration from Frontend...")
     
     yield
     
-    # Shutdown
-    print("🛑 Shutting down Smart Lock Backend...")
+    print("Shutting down Smart Lock Backend...")
     uart_service.disconnect()
 
 # Tạo FastAPI app
@@ -38,11 +49,40 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Trong production nên chỉ định cụ thể
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        print(f"✅ WebSocket client connected. Total: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        print(f"❌ WebSocket client disconnected. Total: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        """Broadcast message to all connected clients"""
+        for connection in self.active_connections[:]:  # Copy list to avoid modification during iteration
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                print(f"Error broadcasting to client: {e}")
+                try:
+                    self.disconnect(connection)
+                except:
+                    pass
+
+manager = ConnectionManager()
 
 # Include routers
 app.include_router(state.router)
@@ -71,8 +111,24 @@ async def health():
         "status": "healthy",
         "uart_connected": uart_service.serial_conn is not None and uart_service.serial_conn.is_open,
         "mode": state_manager.mode.value,
-        "door_status": state_manager.door_status.value
+        "door_status": state_manager.door_status.value,
+        "websocket_clients": len(websocket_manager.active_connections)
     }
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time updates"""
+    await websocket_manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive and receive messages from client
+            data = await websocket.receive_text()
+            # Echo back or handle client messages if needed
+    except WebSocketDisconnect:
+        websocket_manager.disconnect(websocket)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        websocket_manager.disconnect(websocket)
 
 if __name__ == "__main__":
     import uvicorn

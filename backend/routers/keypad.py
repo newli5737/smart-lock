@@ -23,14 +23,26 @@ async def set_password(
     request: KeypadSetPasswordRequest,
     db: Session = Depends(get_db)
 ):
-    """Đặt/thay đổi mật khẩu bàn phím (chỉ trong chế độ Registration)"""
+    """Đặt/thay đổi mật khẩu bàn phím"""
     
-    # Kiểm tra chế độ
-    if not state_manager.is_registration_mode():
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ có thể đặt mật khẩu trong chế độ Registration"
-        )
+    # Kiểm tra xem đã có mật khẩu cũ chưa
+    existing_password = db.query(KeypadPassword).first()
+    
+    if existing_password:
+        # Yêu cầu mật khẩu cũ nếu đã có mật khẩu
+        if not request.old_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cần nhập mật khẩu cũ để đổi mật khẩu"
+            )
+        
+        # Verify old password
+        old_hash = hash_password(request.old_password)
+        if old_hash != existing_password.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Mật khẩu cũ không đúng"
+            )
     
     # Hash mật khẩu
     password_hash = hash_password(request.password)
@@ -43,8 +55,7 @@ async def set_password(
     db.add(keypad_password)
     db.commit()
     
-    # Phản hồi LED xanh và beep
-    uart_service.set_led("green")
+    # Phản hồi beep
     uart_service.beep(2)
     
     return KeypadSetPasswordResponse(
@@ -106,7 +117,6 @@ async def verify_password(
         
         # Mở khóa cửa
         uart_service.unlock_door(duration=5)
-        uart_service.set_led("green")
         uart_service.beep(2)
         
         return KeypadVerifyResponse(

@@ -1,6 +1,10 @@
 #include "config.h"
 #include "globals.h"
 #include <ArduinoJson.h>
+#include <Adafruit_Fingerprint.h>
+
+// External fingerprint sensor object from input_task.cpp
+extern Adafruit_Fingerprint finger;
 
 
 void vSerialTask(void *pvParameters) {
@@ -41,7 +45,6 @@ void vSerialTask(void *pvParameters) {
             qCmd.value = doc["times"] | 1;
             xQueueSend(xCommandQueue, &qCmd, portMAX_DELAY);
           } else if (strcmp(cmd, "enroll_fingerprint") == 0) {
-            // Start fingerprint enrollment
             extern bool enrollmentMode;
             extern uint8_t enrollmentID;
             extern uint8_t enrollmentStep;
@@ -51,6 +54,56 @@ void vSerialTask(void *pvParameters) {
             enrollmentStep = 0;
             
             Serial.println("{\"status\":\"enrollment_started\"}");
+          } else if (strcmp(cmd, "delete_fingerprint") == 0) {
+            // Delete fingerprint from sensor
+            uint8_t id = doc["id"] | 1;
+            uint8_t result = finger.deleteModel(id);
+            
+            if (result == FINGERPRINT_OK) {
+              Serial.print("{\"status\":\"fingerprint_deleted\",\"id\":");
+              Serial.print(id);
+              Serial.println("}");
+              
+              // Display on LCD
+              ControlCommand dCmd;
+              dCmd.type = CMD_UPDATE_DISPLAY;
+              strcpy(dCmd.text, "Da xoa");
+              xQueueSend(xDisplayQueue, &dCmd, 0);
+            } else {
+              Serial.print("{\"status\":\"delete_failed\",\"id\":");
+              Serial.print(id);
+              Serial.println("}");
+            }
+          } else if (strcmp(cmd, "list_fingerprints") == 0) {
+            // List all fingerprints in sensor
+            Serial.println("{\"status\":\"listing_fingerprints\"}");
+            
+            for (uint8_t id = 1; id <= 127; id++) {
+              uint8_t result = finger.loadModel(id);
+              if (result == FINGERPRINT_OK) {
+                Serial.print("{\"fingerprint_found\":");
+                Serial.print(id);
+                Serial.println("}");
+              }
+              vTaskDelay(10 / portTICK_PERIOD_MS);
+            }
+            
+            Serial.println("{\"status\":\"listing_complete\"}");
+          } else if (strcmp(cmd, "clear_all_fingerprints") == 0) {
+            // Clear all fingerprints from sensor
+            uint8_t result = finger.emptyDatabase();
+            
+            if (result == FINGERPRINT_OK) {
+              Serial.println("{\"status\":\"all_fingerprints_cleared\"}");
+              
+              // Display on LCD
+              ControlCommand dCmd;
+              dCmd.type = CMD_UPDATE_DISPLAY;
+              strcpy(dCmd.text, "Da xoa tat ca");
+              xQueueSend(xDisplayQueue, &dCmd, 0);
+            } else {
+              Serial.println("{\"status\":\"clear_failed\"}");
+            }
           }
         } else {
         }

@@ -3,8 +3,11 @@ import type { KeypadVerifyResponse } from '../types';
 
 export const keypadService = {
     // Set/change password
-    async setPassword(password: string): Promise<{ success: boolean; message: string }> {
-        const response = await apiClient.post('/api/keypad/set-password', { password });
+    async setPassword(password: string, oldPassword?: string): Promise<{ success: boolean; message: string }> {
+        const response = await apiClient.post('/api/keypad/set-password', {
+            password,
+            old_password: oldPassword
+        });
         return response.data;
     },
 

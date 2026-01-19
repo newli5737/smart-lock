@@ -11,9 +11,9 @@
 
 enum EventType {
   EVENT_FINGERPRINT_DETECTED,
-  EVENT_FINGERPRINT_ENROLL_START,  // New: Start enrollment process
+  EVENT_FINGERPRINT_ENROLL_START, 
   EVENT_KEYPAD_PRESS,
-  EVENT_KEYPAD_SUBMIT // When user presses '#' or full password collected
+  EVENT_KEYPAD_SUBMIT 
 };
 
 struct InputEvent {
@@ -21,7 +21,7 @@ struct InputEvent {
   char data[32]; 
 };
 
-enum CommandType { CMD_UNLOCK, CMD_LOCK, CMD_BEEP, CMD_UPDATE_DISPLAY };
+enum CommandType { CMD_UNLOCK, CMD_LOCK, CMD_BEEP, CMD_UPDATE_DISPLAY, CMD_LED };
 
 struct ControlCommand {
   CommandType type;

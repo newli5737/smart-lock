@@ -30,4 +30,21 @@ export const fingerprintService = {
     async deletePrint(id: number): Promise<void> {
         await apiClient.delete(`/api/fingerprint/${id}`);
     },
+
+    // Get fingerprint list from AS608 sensor
+    async getSensorPrints(): Promise<{
+        success: boolean;
+        message: string;
+        fingerprints?: number[];
+        count?: number
+    }> {
+        const response = await apiClient.get('/api/fingerprint/sensor-prints');
+        return response.data;
+    },
+
+    // Clear all fingerprints from database and sensor
+    async clearAll(): Promise<{ success: boolean; message: string }> {
+        const response = await apiClient.delete('/api/fingerprint/clear-all');
+        return response.data;
+    },
 };
