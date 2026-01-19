@@ -6,13 +6,6 @@ from schemas.user import (
     FaceVerifyRequest,
     FaceVerifyResponse
 )
-from schemas.rfid import (
-    RFIDCardBase,
-    RFIDCardCreate,
-    RFIDCardResponse,
-    RFIDVerifyRequest,
-    RFIDVerifyResponse
-)
 from schemas.keypad import (
     KeypadSetPasswordRequest,
     KeypadSetPasswordResponse,
@@ -33,8 +26,6 @@ from schemas.logs import (
 __all__ = [
     "UserBase", "UserCreate", "UserResponse",
     "FaceRegisterRequest", "FaceVerifyRequest", "FaceVerifyResponse",
-    "RFIDCardBase", "RFIDCardCreate", "RFIDCardResponse",
-    "RFIDVerifyRequest", "RFIDVerifyResponse",
     "KeypadSetPasswordRequest", "KeypadSetPasswordResponse",
     "KeypadVerifyRequest", "KeypadVerifyResponse",
     "StateResponse", "SetModeRequest", "SetModeResponse",
