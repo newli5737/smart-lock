@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, Boolean
-from sqlalchemy.sql import func
 from database import Base
+from utils.time_utils import vietnam_now
 import enum
 
 class AccessMethod(str, enum.Enum):
@@ -20,5 +20,5 @@ class AccessLog(Base):
     access_method = Column(SQLEnum(AccessMethod), nullable=False)
     access_type = Column(SQLEnum(AccessType), nullable=False)  
     success = Column(Boolean, nullable=False)
-    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    timestamp = Column(DateTime(timezone=True), default=vietnam_now, index=True)
     details = Column(String, nullable=True) 

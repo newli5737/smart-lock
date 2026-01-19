@@ -10,7 +10,8 @@ import {
   Wifi,
   WifiOff,
   Menu,
-  X
+  X,
+  User as UserIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/app/components/auth-context';
@@ -29,6 +30,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     { id: 'keypad', label: 'Mật khẩu Keypad', icon: KeyRound },
     { id: 'history', label: 'Lịch sử ra vào', icon: History },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: Settings },
+    { id: 'users', label: 'Quản lý người dùng', icon: UserIcon },
   ];
 
   return (

@@ -2,7 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import Base, engine
-from routers import state, face, fingerprint, keypad, logs, config, video
+from routers import state, face, fingerprint, keypad, logs, config, video, user
 from services.uart import uart_service
 from services.state_manager import state_manager
 from services.websocket import websocket_manager
@@ -62,6 +62,7 @@ app.include_router(keypad.router)
 app.include_router(logs.router)
 app.include_router(config.router)
 app.include_router(video.router)
+app.include_router(user.router)
 
 @app.get("/")
 async def root():

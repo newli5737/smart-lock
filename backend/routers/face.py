@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, AccessLog, AccessMethod, AccessType
+from models import User, Face, AccessLog, AccessMethod, AccessType
 from schemas.user import UserResponse, FaceVerifyResponse
 from services.uniface import uniface_service
 from services.state_manager import state_manager
@@ -55,13 +55,23 @@ async def register_face(
                 detail="Không phát hiện khuôn mặt trong ảnh"
             )
         
-        user = User(
-            name=name,
-            face_embedding=embedding.tobytes()
+        # Check if user exists
+        user = db.query(User).filter(User.name == name).first()
+        if not user:
+            user = User(name=name)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+        # Add face to user
+        face = Face(
+            user_id=user.id,
+            face_embedding=embedding.tobytes(),
+            image_path=image_path
         )
-        db.add(user)
+        db.add(face)
         db.commit()
-        db.refresh(user)
+        db.refresh(user) # Refresh user to get associated faces
         
         uart_service.set_led("green")
         uart_service.beep(2)
@@ -113,15 +123,15 @@ async def verify_face(
             message="Không phát hiện khuôn mặt"
         )
     
-    users = db.query(User).filter(User.face_embedding.isnot(None)).all()
+    faces = db.query(Face).all()
     
-    if not users:
+    if not faces:
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
             access_type=AccessType.ENTRY,
             success=False,
-            details="Chưa có người dùng nào đăng ký"
+            details="Chưa có khuôn mặt nào được đăng ký"
         )
         db.add(log)
         db.commit()
@@ -136,21 +146,24 @@ async def verify_face(
             message="Chưa có người dùng nào đăng ký"
         )
     
-    best_match = None
+    best_match_face = None
     best_similarity = 0.0
     
-    for user in users:
-        stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
+    for face in faces:
+        stored_embedding = np.frombuffer(face.face_embedding, dtype=np.float32)
         similarity = uniface_service.compare_faces(new_embedding, stored_embedding)
         
         if similarity > best_similarity:
             best_similarity = similarity
-            best_match = user
+            best_match_face = face
     
     threshold = 0.7
     if best_similarity >= threshold:
+        # Get user from face
+        user = best_match_face.user
+        
         log = AccessLog(
-            user_name=best_match.name,
+            user_name=user.name,
             access_method=AccessMethod.FACE,
             access_type=AccessType.ENTRY,
             success=True,
@@ -165,9 +178,9 @@ async def verify_face(
         
         return FaceVerifyResponse(
             success=True,
-            user_name=best_match.name,
+            user_name=user.name,
             similarity=best_similarity,
-            message=f"Chào mừng {best_match.name}!"
+            message=f"Chào mừng {user.name}!"
         )
     else:
         log = AccessLog(
@@ -192,14 +205,15 @@ async def verify_face(
 
 @router.get("/users", response_model=List[UserResponse])
 async def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).filter(User.face_embedding.isnot(None)).all()
+    # Get users who have at least one face registered
+    users = db.query(User).join(Face).filter(Face.id.isnot(None)).distinct().all()
     
     return [
         UserResponse(
             id=user.id,
             name=user.name,
             created_at=user.created_at,
-            has_face=True
+            has_face=True # Simplification since we filtered
         )
         for user in users
     ]
@@ -249,9 +263,9 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             message="Không phát hiện khuôn mặt"
         )
     
-    users = db.query(User).filter(User.face_embedding.isnot(None)).all()
+    faces = db.query(Face).all()
     
-    if not users:
+    if not faces:
         log = AccessLog(
             user_name=None,
             access_method=AccessMethod.FACE,
@@ -272,21 +286,22 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
             message="Chưa có người dùng nào đăng ký"
         )
     
-    best_match = None
+    best_match_face = None
     best_similarity = 0.0
     
-    for user in users:
-        stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
+    for face in faces:
+        stored_embedding = np.frombuffer(face.face_embedding, dtype=np.float32)
         similarity = uniface_service.compare_faces(new_embedding, stored_embedding)
         
         if similarity > best_similarity:
             best_similarity = similarity
-            best_match = user
+            best_match_face = face
     
     threshold = 0.7
     if best_similarity >= threshold:
+        user = best_match_face.user
         log = AccessLog(
-            user_name=best_match.name,
+            user_name=user.name,
             access_method=AccessMethod.FACE,
             access_type=AccessType.ENTRY,
             success=True,
@@ -301,9 +316,9 @@ async def verify_face_from_stream(db: Session = Depends(get_db)):
         
         return FaceVerifyResponse(
             success=True,
-            user_name=best_match.name,
+            user_name=user.name,
             similarity=best_similarity,
-            message=f"Chào mừng {best_match.name}!"
+            message=f"Chào mừng {user.name}!"
         )
     else:
         log = AccessLog(

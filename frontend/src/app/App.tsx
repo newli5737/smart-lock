@@ -10,6 +10,7 @@ import { FingerprintEntryPage } from '@/app/components/fingerprint-entry-page';
 import { KeypadPage } from '@/app/components/keypad-page';
 import { HistoryPage } from '@/app/components/history-page';
 import { SettingsPage } from '@/app/components/settings-page';
+import { UsersPage } from '@/app/components/users-page';
 
 import { SocketProvider } from '@/context/socket-context';
 
@@ -38,6 +39,8 @@ function AppContent() {
         return <HistoryPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'users':
+        return <UsersPage />;
       default:
         return <DashboardPage />;
     }

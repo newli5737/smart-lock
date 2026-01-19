@@ -11,7 +11,7 @@ import threading
 import numpy as np
 from typing import Generator, Optional, List
 from database import SessionLocal
-from models import User, AccessLog, AccessMethod, AccessType
+from models import User, AccessLog, AccessMethod, AccessType, Face
 
 from services.singleton import SingletonMeta
 
@@ -215,18 +215,18 @@ class FaceRecognitionStream(metaclass=SingletonMeta):
                                         # So sánh với database
                                         db = SessionLocal()
                                         try:
-                                            users = db.query(User).filter(User.face_embedding.isnot(None)).all()
+                                            faces = db.query(Face).all()
                                             
-                                            best_match = None
+                                            best_match_face = None
                                             best_similarity = 0.0
                                             
-                                            for user in users:
-                                                stored_embedding = np.frombuffer(user.face_embedding, dtype=np.float32)
+                                            for face in faces:
+                                                stored_embedding = np.frombuffer(face.face_embedding, dtype=np.float32)
                                                 similarity = uniface_service.compare_faces(embedding, stored_embedding)
                                                 
                                                 if similarity > best_similarity:
                                                     best_similarity = similarity
-                                                    best_match = user
+                                                    best_match_face = face
                                             
                                             threshold = 0.7
                                             
@@ -234,14 +234,15 @@ class FaceRecognitionStream(metaclass=SingletonMeta):
                                             current_best_similarity = best_similarity
                                             
                                             if best_similarity >= threshold:
-                                                recognized_user = best_match.name
+                                                user = best_match_face.user
+                                                recognized_user = user.name
                                                 self.last_recognized_user = recognized_user
                                                 self.last_similarity = best_similarity
                                                 recognition_time = time.time()
                                                 
                                                 # Log access
                                                 log = AccessLog(
-                                                    user_name=best_match.name,
+                                                    user_name=user.name,
                                                     access_method=AccessMethod.FACE,
                                                     access_type=AccessType.ENTRY,
                                                     success=True,

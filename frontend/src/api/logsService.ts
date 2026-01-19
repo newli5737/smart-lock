@@ -6,7 +6,7 @@ export const logsService = {
     async getLogs(params?: {
         limit?: number;
         offset?: number;
-        method?: 'face' | 'rfid' | 'keypad';
+        method?: 'face' | 'fingerprint' | 'keypad';
         access_type?: 'entry' | 'exit';
         success?: boolean;
     }): Promise<{ logs: AccessLog[]; total: number }> {

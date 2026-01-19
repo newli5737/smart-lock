@@ -45,7 +45,7 @@ async def enroll_fingerprint(
     fingerprint = Fingerprint(
         fingerprint_id=fingerprint_data.fingerprint_id,
         user_id=user.id,
-        user_name=user.name,
+        # user_name removed
         finger_position=fingerprint_data.finger_position,
         is_active=False  
     )
@@ -64,7 +64,7 @@ async def enroll_fingerprint(
         id=fingerprint.id,
         fingerprint_id=fingerprint.fingerprint_id,
         user_id=fingerprint.user_id,
-        user_name=fingerprint.user_name,
+        user_name=user.name, # Use mapped user object
         finger_position=fingerprint.finger_position,
         is_active=fingerprint.is_active,
         created_at=fingerprint.created_at
@@ -89,7 +89,7 @@ async def verify_fingerprint(
     
     if fingerprint:
         log = AccessLog(
-            user_name=fingerprint.user_name,
+            user_name=fingerprint.user.name, # Use relationship
             access_method=AccessMethod.FINGERPRINT,
             access_type=AccessType.ENTRY,
             success=True,
@@ -103,8 +103,8 @@ async def verify_fingerprint(
         
         return FingerprintVerifyResponse(
             success=True,
-            message=f"Chào mừng {fingerprint.user_name}!",
-            user_name=fingerprint.user_name
+            message=f"Chào mừng {fingerprint.user.name}!",
+            user_name=fingerprint.user.name
         )
     else:
         log = AccessLog(
@@ -127,12 +127,14 @@ async def verify_fingerprint(
 @router.get("/prints")
 async def get_fingerprints(db: Session = Depends(get_db)):
     fingerprints = db.query(Fingerprint).all()
+    # Ensure lazy load works or do joinedload if performance needed. 
+    # For small app, simple access is fine.
     return [
         FingerprintResponse(
             id=fp.id,
             fingerprint_id=fp.fingerprint_id,
             user_id=fp.user_id,
-            user_name=fp.user_name,
+            user_name=fp.user.name, # Access relationship
             finger_position=fp.finger_position,
             is_active=fp.is_active,
             created_at=fp.created_at
@@ -197,7 +199,7 @@ async def delete_fingerprint(fingerprint_id: int, db: Session = Depends(get_db))
     if not fingerprint:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Fingerprint database ID {fingerprint_db_id} không tồn tại"
+            detail=f"Fingerprint database ID {fingerprint_id} không tồn tại"
         )
     
     sensor_id = fingerprint.fingerprint_id

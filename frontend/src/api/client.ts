@@ -8,20 +8,12 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor for debugging
+// Request interceptor
 apiClient.interceptors.request.use(
     (config) => {
-        console.log('🚀 API Request:', {
-            method: config.method?.toUpperCase(),
-            url: config.url,
-            baseURL: config.baseURL,
-            fullURL: `${config.baseURL}${config.url}`,
-            data: config.data
-        });
         return config;
     },
     (error) => {
-        console.error('❌ Request Error:', error);
         return Promise.reject(error);
     }
 );
@@ -29,12 +21,7 @@ apiClient.interceptors.request.use(
 // Response interceptor for debugging
 apiClient.interceptors.response.use(
     (response) => {
-        console.log('✅ API Response:', {
-            url: response.config.url,
-            status: response.status,
-            data: response.data
-        });
-        return response;
+        return response.data; // Return data directly for convenience
     },
     (error) => {
         console.error('❌ API Error:', {
@@ -47,4 +34,5 @@ apiClient.interceptors.response.use(
     }
 );
 
+export const api = apiClient;
 export default apiClient;

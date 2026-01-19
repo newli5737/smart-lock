@@ -6,10 +6,9 @@ import { useLockStore } from '@/store/lockStore';
 export function SettingsPage() {
   const { config, fetchConfig, updateConfig, isLoading } = useLockStore();
 
-  // Local state for form
   const [formData, setFormData] = useState({
     face_similarity_threshold: 0.7,
-    uart_port: 'COM3',
+    uart_port: 'COM6',
     uart_baudrate: 115200,
   });
 
@@ -28,17 +27,11 @@ export function SettingsPage() {
   }, [config]);
 
   const handleSave = async () => {
-    console.log('💾 Settings Save Button Clicked');
-    console.log('📝 Form Data:', formData);
-    console.log('🔄 isLoading before:', isLoading);
     try {
-      console.log('🔄 Calling updateConfig...');
       await updateConfig(formData);
-      console.log('✅ updateConfig completed successfully');
       toast.success('Cài đặt đã được lưu thành công');
     } catch (error) {
-      console.error('❌ updateConfig failed:', error);
-      // Error handled in store
+      console.error('updateConfig failed:', error);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { History, Smile, CreditCard, KeyRound, Check, X, Filter, Download, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { History, Smile, Fingerprint, KeyRound, Check, X, Filter, Download, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { logsService } from '@/api';
 import type { AccessLog } from '@/types';
 import { toast } from 'sonner';
@@ -48,8 +48,8 @@ export function HistoryPage() {
     switch (method) {
       case 'face':
         return <Smile className="w-4 h-4" />;
-      case 'rfid':
-        return <CreditCard className="w-4 h-4" />;
+      case 'fingerprint':
+        return <Fingerprint className="w-4 h-4" />;
       case 'keypad':
         return <KeyRound className="w-4 h-4" />;
       default:
@@ -60,7 +60,7 @@ export function HistoryPage() {
   const getMethodLabel = (method: string) => {
     switch (method) {
       case 'face': return 'Khuôn mặt';
-      case 'rfid': return 'RFID';
+      case 'fingerprint': return 'Vân tay';
       case 'keypad': return 'Keypad';
       default: return method;
     }
@@ -69,7 +69,7 @@ export function HistoryPage() {
   const getMethodColor = (method: string) => {
     switch (method) {
       case 'face': return 'bg-primary/10 text-primary';
-      case 'rfid': return 'bg-secondary/10 text-secondary';
+      case 'fingerprint': return 'bg-secondary/10 text-secondary';
       case 'keypad': return 'bg-accent/10 text-accent';
       default: return 'bg-muted text-muted-foreground';
     }
@@ -131,7 +131,7 @@ export function HistoryPage() {
             >
               <option value="all">Tất cả</option>
               <option value="face">Khuôn mặt</option>
-              <option value="rfid">RFID</option>
+              <option value="fingerprint">Vân tay</option>
               <option value="keypad">Keypad</option>
             </select>
           </div>

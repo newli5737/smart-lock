@@ -118,7 +118,7 @@ def handle_esp32_message(message: dict):
                     
                     if fingerprint:
                         log = AccessLog(
-                            user_name=fingerprint.user_name,
+                            user_name=fingerprint.user.name,
                             access_method=AccessMethod.FINGERPRINT,
                             access_type=AccessType.ENTRY,
                             success=True,
@@ -133,8 +133,8 @@ def handle_esp32_message(message: dict):
                         try:
                             payload = {
                                 "type": "scan_success",
-                                "message": f"Xin chào {fingerprint.user_name}!",
-                                "user_name": fingerprint.user_name
+                                "message": f"Xin chào {fingerprint.user.name}!",
+                                "user_name": fingerprint.user.name
                             }
                             
                             broadcast_async(payload)
