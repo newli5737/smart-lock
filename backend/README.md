@@ -2,16 +2,6 @@
 
 Backend cho hệ thống khóa thông minh IoT với Face Recognition, RFID, và Keypad.
 
-## Tính Năng
-
-- ✅ Nhận diện khuôn mặt (Uniface)
-- ✅ Xác thực thẻ RFID
-- ✅ Xác thực mật khẩu bàn phím
-- ✅ Giao tiếp UART với ESP32
-- ✅ Quản lý trạng thái 2 chế độ (Entry/Exit và Registration)
-- ✅ Nhật ký truy cập chi tiết
-- ✅ Thống kê truy cập
-
 ## Cài Đặt
 
 ```bash

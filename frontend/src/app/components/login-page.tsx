@@ -95,12 +95,6 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground text-center">
-              <strong>Demo:</strong> admin / admin123
-            </p>
-          </div>
         </div>
       </div>
     </div>
